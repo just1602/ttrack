@@ -56,7 +56,13 @@ pub fn get_cli_args() -> ArgMatches {
                 .arg(
                     Arg::new("since")
                         .long("since")
-                        .help("The date since when we wnat the report to start.")
+                        .help("The date since when we want the report to start.")
+                        .value_parser(clap::builder::ValueParser::new(tt_clap_date_parser)),
+                )
+                .arg(
+                    Arg::new("until")
+                        .long("until")
+                        .help("The date until when we want the report to end.")
                         .value_parser(clap::builder::ValueParser::new(tt_clap_date_parser)),
                 ),
         )

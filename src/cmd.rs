@@ -17,13 +17,22 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
         .has_headers(false)
         .from_reader(file);
 
+    let data: Vec<TimeRecord> = csv_reader.deserialize().map(|f| f.unwrap()).collect();
+
     let data: Vec<TimeRecord> = match cmd.get_one::<NaiveDate>("since") {
-        Some(since) => csv_reader
-            .deserialize()
-            .map(|f| f.unwrap())
+        Some(since) => data
+            .into_iter()
             .filter(|tr: &TimeRecord| tr.created_at >= *since)
             .collect(),
-        None => csv_reader.deserialize().map(|f| f.unwrap()).collect(),
+        None => data,
+    };
+
+    let data: Vec<TimeRecord> = match cmd.get_one::<NaiveDate>("until") {
+        Some(until) => data
+            .into_iter()
+            .filter(|tr: &TimeRecord| tr.created_at <= *until)
+            .collect(),
+        None => data,
     };
 
     if cmd.get_flag("by-project") {
