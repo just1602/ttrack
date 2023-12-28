@@ -13,7 +13,7 @@ fn tt_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
 }
 
 pub fn get_cli_args() -> ArgMatches {
-    Command::new("tt")
+    Command::new("ttrack")
         .version("0.0.1-dev")
         .about("A simple, but yet powerfull time tracker.")
         .arg(
