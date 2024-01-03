@@ -1,7 +1,7 @@
 use chrono::{Days, Local, NaiveDate};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
-fn tt_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
+fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
     match date {
         "today" => Ok(Local::now().date_naive()),
         "yesterday" => Ok(Local::now()
@@ -10,6 +10,30 @@ fn tt_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
             .unwrap()),
         _ => Ok(date.parse::<NaiveDate>().unwrap()),
     }
+}
+
+fn ttrack_clap_duration_parser(duration: &str) -> Result<u64, std::io::Error> {
+    if let Ok(numeric_duration) = duration.parse::<u64>() {
+        return Ok(numeric_duration);
+    }
+
+    let mut secs = 0;
+    let mut start_idx = 0;
+    for (idx, c) in duration.chars().enumerate() {
+        match c {
+            'h' => {
+                secs += duration[start_idx..idx].parse::<u64>().unwrap() * 3600;
+                start_idx = idx + 1;
+            }
+            'm' => {
+                secs += duration[start_idx..idx].parse::<u64>().unwrap() * 60;
+                start_idx = idx + 1;
+            }
+            _ => continue,
+        }
+    }
+
+    Ok(secs)
 }
 
 pub fn get_cli_args() -> ArgMatches {
@@ -29,7 +53,7 @@ pub fn get_cli_args() -> ArgMatches {
                     Arg::new("time")
                         .short('t')
                         .help("The time duration of the record in seconds.")
-                        .value_parser(clap::value_parser!(u64))
+                        .value_parser(clap::builder::ValueParser::new(ttrack_clap_duration_parser))
                         .required(true),
                 )
                 .arg(
@@ -57,13 +81,13 @@ pub fn get_cli_args() -> ArgMatches {
                     Arg::new("since")
                         .long("since")
                         .help("The date since when we want the report to start.")
-                        .value_parser(clap::builder::ValueParser::new(tt_clap_date_parser)),
+                        .value_parser(clap::builder::ValueParser::new(ttrack_clap_date_parser)),
                 )
                 .arg(
                     Arg::new("until")
                         .long("until")
                         .help("The date until when we want the report to end.")
-                        .value_parser(clap::builder::ValueParser::new(tt_clap_date_parser)),
+                        .value_parser(clap::builder::ValueParser::new(ttrack_clap_date_parser)),
                 ),
         )
         .get_matches()
