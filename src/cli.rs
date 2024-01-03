@@ -92,3 +92,75 @@ pub fn get_cli_args() -> ArgMatches {
         )
         .get_matches()
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::{Days, Local, NaiveDate};
+
+    use crate::cli::{ttrack_clap_date_parser, ttrack_clap_duration_parser};
+
+    #[test]
+    fn ttrack_clap_date_parser_returns_the_date_directly_if_its_a_date() {
+        let result = ttrack_clap_date_parser("2024-01-01");
+
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
+        );
+    }
+
+    #[test]
+    fn ttrack_clap_date_parser_parse_yesterday_string_correctly() {
+        let result = ttrack_clap_date_parser("yesterday");
+
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            Local::now()
+                .checked_sub_days(Days::new(1))
+                .unwrap()
+                .date_naive()
+        );
+    }
+
+    #[test]
+    fn ttrack_clap_date_parser_parse_today_string_correctly() {
+        let result = ttrack_clap_date_parser("today");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Local::now().date_naive());
+    }
+
+    #[test]
+    fn ttrack_clap_duration_parser_parse_duration_directly_if_its_seconds() {
+        let result = ttrack_clap_duration_parser("3600");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 3600);
+    }
+
+    #[test]
+    fn ttrack_clap_duration_parser_parse_hours_correctly() {
+        let result = ttrack_clap_duration_parser("2h");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 7200);
+    }
+
+    #[test]
+    fn ttrack_clap_duration_parser_parse_minutes_correctly() {
+        let result = ttrack_clap_duration_parser("30m");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1800);
+    }
+
+    #[test]
+    fn ttrack_clap_duration_parser_parse_mised_hours_and_minutes_correctly() {
+        let result = ttrack_clap_duration_parser("1h30m");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 5400);
+    }
+}
