@@ -60,4 +60,4 @@ jobs:
       - name: Install stable
         uses: dtolnay/rust-toolchain@stable
       - name: cargo test
-        run: cargo test
+        run: cargo test --locked
