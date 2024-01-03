@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::record::{format_duration, TimeRecord};
-use chrono::{Local, NaiveDate};
+use chrono::{Days, Local, NaiveDate};
 use clap::ArgMatches;
 use csv::{ReaderBuilder, WriterBuilder};
 
@@ -18,6 +18,29 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
         .from_reader(file);
 
     let data: Vec<TimeRecord> = csv_reader.deserialize().map(|f| f.unwrap()).collect();
+
+    let data: Vec<TimeRecord> = if cmd.get_flag("today") {
+        let today = Local::now().date_naive();
+
+        data.into_iter()
+            .filter(|tr: &TimeRecord| tr.created_at == today)
+            .collect()
+    } else {
+        data
+    };
+
+    let data: Vec<TimeRecord> = if cmd.get_flag("yesterday") {
+        let yesterday = Local::now()
+            .checked_sub_days(Days::new(1))
+            .unwrap()
+            .date_naive();
+
+        data.into_iter()
+            .filter(|tr: &TimeRecord| tr.created_at == yesterday)
+            .collect()
+    } else {
+        data
+    };
 
     let data: Vec<TimeRecord> = match cmd.get_one::<NaiveDate>("since") {
         Some(since) => data

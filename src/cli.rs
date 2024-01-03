@@ -88,6 +88,18 @@ pub fn get_cli_args() -> ArgMatches {
                         .long("until")
                         .help("The date until when we want the report to end.")
                         .value_parser(clap::builder::ValueParser::new(ttrack_clap_date_parser)),
+                )
+                .arg(
+                    Arg::new("today")
+                        .long("today")
+                        .help("Only report data from today")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("yesterday")
+                        .long("yesterday")
+                        .help("Only report data from yesterday")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .get_matches()
