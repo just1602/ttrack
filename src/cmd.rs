@@ -42,6 +42,34 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
         data
     };
 
+    let data: Vec<TimeRecord> = if cmd.get_flag("this-week") {
+        let week = Local::now().date_naive().week(chrono::Weekday::Mon);
+
+        data.into_iter()
+            .filter(|tr: &TimeRecord| {
+                tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
+            })
+            .collect()
+    } else {
+        data
+    };
+
+    let data: Vec<TimeRecord> = if cmd.get_flag("last-week") {
+        let week = Local::now()
+            .date_naive()
+            .checked_sub_days(Days::new(7))
+            .expect("Failed to compute last week.")
+            .week(chrono::Weekday::Mon);
+
+        data.into_iter()
+            .filter(|tr: &TimeRecord| {
+                tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
+            })
+            .collect()
+    } else {
+        data
+    };
+
     let data: Vec<TimeRecord> = match cmd.get_one::<NaiveDate>("since") {
         Some(since) => data
             .into_iter()

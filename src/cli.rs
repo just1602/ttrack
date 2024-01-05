@@ -100,6 +100,18 @@ pub fn get_cli_args() -> ArgMatches {
                         .long("yesterday")
                         .help("Only report data from yesterday")
                         .action(ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("this-week")
+                        .long("this-week")
+                        .help("Only report data from the current week (monday to sunday).")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("last-week")
+                        .long("last-week")
+                        .help("Only report data from the previous week (monday to sunday).")
+                        .action(ArgAction::SetTrue),
                 ),
         )
         .get_matches()
