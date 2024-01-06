@@ -87,10 +87,9 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
     };
 
     if cmd.get_flag("by-project") {
-        report_by_project(data);
-    } else {
-        report_total_hours(data);
+        report_by_project(data.clone());
     }
+    report_total_hours(data);
 }
 
 fn report_total_hours(data: Vec<TimeRecord>) {
@@ -118,6 +117,7 @@ fn report_by_project(data: Vec<TimeRecord>) {
     duration_by_project
         .into_iter()
         .for_each(|(k, v)| println!("{}: {}", k, format_duration(v)));
+    println!("---")
 }
 
 pub fn handle_track(cmd: ArgMatches, filename: String) {
