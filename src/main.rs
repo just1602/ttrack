@@ -2,12 +2,12 @@ mod cli;
 mod cmd;
 mod record;
 
-use cli::get_cli_args;
+use cli::get_cli;
 use cmd::handle_report;
 use cmd::handle_track;
 
 fn main() {
-    let args = get_cli_args();
+    let args = get_cli().get_matches();
     let filename = args
         .get_one::<String>("file")
         .expect("Filename must exists.")

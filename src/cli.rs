@@ -1,5 +1,5 @@
 use chrono::{Days, Local, NaiveDate};
-use clap::{Arg, ArgAction, ArgMatches, Command};
+use clap::{Arg, ArgAction, Command};
 
 fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
     match date {
@@ -36,7 +36,7 @@ fn ttrack_clap_duration_parser(duration: &str) -> Result<u64, std::io::Error> {
     Ok(secs)
 }
 
-pub fn get_cli_args() -> ArgMatches {
+pub fn get_cli() -> Command {
     Command::new("ttrack")
         .version("0.0.1-dev")
         .about("A simple, but yet powerfull time tracker.")
@@ -114,7 +114,6 @@ pub fn get_cli_args() -> ArgMatches {
                         .action(ArgAction::SetTrue),
                 ),
         )
-        .get_matches()
 }
 
 #[cfg(test)]
