@@ -17,73 +17,49 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
         .has_headers(false)
         .from_reader(file);
 
-    let data: Vec<TimeRecord> = csv_reader.deserialize().map(|f| f.unwrap()).collect();
+    let mut data: Vec<TimeRecord> = csv_reader.deserialize().map(|f| f.unwrap()).collect();
 
-    let data: Vec<TimeRecord> = if cmd.get_flag("today") {
+    if cmd.get_flag("today") {
         let today = Local::now().date_naive();
 
-        data.into_iter()
-            .filter(|tr: &TimeRecord| tr.created_at == today)
-            .collect()
-    } else {
-        data
-    };
+        data.retain(|tr: &TimeRecord| tr.created_at == today);
+    }
 
-    let data: Vec<TimeRecord> = if cmd.get_flag("yesterday") {
+    if cmd.get_flag("yesterday") {
         let yesterday = Local::now()
             .checked_sub_days(Days::new(1))
             .unwrap()
             .date_naive();
 
-        data.into_iter()
-            .filter(|tr: &TimeRecord| tr.created_at == yesterday)
-            .collect()
-    } else {
-        data
-    };
+        data.retain(|tr: &TimeRecord| tr.created_at == yesterday)
+    }
 
-    let data: Vec<TimeRecord> = if cmd.get_flag("this-week") {
+    if cmd.get_flag("this-week") {
         let week = Local::now().date_naive().week(chrono::Weekday::Mon);
 
-        data.into_iter()
-            .filter(|tr: &TimeRecord| {
-                tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
-            })
-            .collect()
-    } else {
-        data
-    };
+        data.retain(|tr: &TimeRecord| {
+            tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
+        })
+    }
 
-    let data: Vec<TimeRecord> = if cmd.get_flag("last-week") {
+    if cmd.get_flag("last-week") {
         let week = Local::now()
             .date_naive()
             .checked_sub_days(Days::new(7))
             .expect("Failed to compute last week.")
             .week(chrono::Weekday::Mon);
 
-        data.into_iter()
-            .filter(|tr: &TimeRecord| {
-                tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
-            })
-            .collect()
-    } else {
-        data
-    };
+        data.retain(|tr: &TimeRecord| {
+            tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
+        })
+    }
 
-    let data: Vec<TimeRecord> = match cmd.get_one::<NaiveDate>("since") {
-        Some(since) => data
-            .into_iter()
-            .filter(|tr: &TimeRecord| tr.created_at >= *since)
-            .collect(),
-        None => data,
-    };
+    if let Some(since) = cmd.get_one::<NaiveDate>("since") {
+        data.retain(|tr: &TimeRecord| tr.created_at >= *since)
+    }
 
-    let data: Vec<TimeRecord> = match cmd.get_one::<NaiveDate>("until") {
-        Some(until) => data
-            .into_iter()
-            .filter(|tr: &TimeRecord| tr.created_at <= *until)
-            .collect(),
-        None => data,
+    if let Some(until) = cmd.get_one::<NaiveDate>("until") {
+        data.retain(|tr: &TimeRecord| tr.created_at <= *until)
     };
 
     if cmd.get_flag("by-project") {
