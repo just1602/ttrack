@@ -22,7 +22,7 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
     if cmd.get_flag("today") {
         let today = Local::now().date_naive();
 
-        data.retain(|tr: &TimeRecord| tr.created_at == today);
+        data.retain(|tr| tr.created_at == today);
     }
 
     if cmd.get_flag("yesterday") {
@@ -31,15 +31,13 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
             .unwrap()
             .date_naive();
 
-        data.retain(|tr: &TimeRecord| tr.created_at == yesterday)
+        data.retain(|tr| tr.created_at == yesterday)
     }
 
     if cmd.get_flag("this-week") {
         let week = Local::now().date_naive().week(chrono::Weekday::Mon);
 
-        data.retain(|tr: &TimeRecord| {
-            tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
-        })
+        data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
     }
 
     if cmd.get_flag("last-week") {
@@ -49,17 +47,15 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
             .expect("Failed to compute last week.")
             .week(chrono::Weekday::Mon);
 
-        data.retain(|tr: &TimeRecord| {
-            tr.created_at >= week.first_day() && tr.created_at <= week.last_day()
-        })
+        data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
     }
 
     if let Some(since) = cmd.get_one::<NaiveDate>("since") {
-        data.retain(|tr: &TimeRecord| tr.created_at >= *since)
+        data.retain(|tr| tr.created_at >= *since)
     }
 
     if let Some(until) = cmd.get_one::<NaiveDate>("until") {
-        data.retain(|tr: &TimeRecord| tr.created_at <= *until)
+        data.retain(|tr| tr.created_at <= *until)
     };
 
     if cmd.get_flag("by-project") {
