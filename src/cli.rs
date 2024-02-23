@@ -1,5 +1,8 @@
+use std::path::PathBuf;
+
 use chrono::{Days, Local, NaiveDate};
-use clap::{Arg, ArgAction, Command};
+use clap::{Parser, Subcommand};
+use std::time::Duration;
 
 fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
     match date {
@@ -12,9 +15,9 @@ fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
     }
 }
 
-fn ttrack_clap_duration_parser(duration: &str) -> Result<u64, std::io::Error> {
+fn ttrack_clap_duration_parser(duration: &str) -> Result<Duration, std::io::Error> {
     if let Ok(numeric_duration) = duration.parse::<u64>() {
-        return Ok(numeric_duration);
+        return Ok(Duration::from_secs(numeric_duration));
     }
 
     let mut secs = 0;
@@ -33,92 +36,111 @@ fn ttrack_clap_duration_parser(duration: &str) -> Result<u64, std::io::Error> {
         }
     }
 
-    Ok(secs)
+    Ok(Duration::from_secs(secs))
 }
 
-pub fn get_cli() -> Command {
-    Command::new("ttrack")
-        .version("0.0.1-dev")
-        .about("A simple, but yet powerfull time tracker.")
-        .arg(
-            Arg::new("file")
-                .short('f')
-                .help("File where to store tracking data.")
-                .required(true),
-        )
-        .subcommand(
-            Command::new("track")
-                .about("Track a new time record.")
-                .arg(
-                    Arg::new("time")
-                        .short('t')
-                        .help("The time duration of the record in seconds.")
-                        .value_parser(clap::builder::ValueParser::new(ttrack_clap_duration_parser))
-                        .required(true),
-                )
-                .arg(
-                    Arg::new("description")
-                        .short('d')
-                        .help("The description of the time record (what has been done).")
-                        .required(true),
-                )
-                .arg(
-                    Arg::new("project")
-                        .short('p')
-                        .help("The project with which this record is associated with."),
-                ),
-        )
-        .subcommand(
-            Command::new("report")
-                .about("Generate report from the records.")
-                .arg(
-                    Arg::new("by-project")
-                        .long("by-project")
-                        .help("Report time by project.")
-                        .action(ArgAction::SetTrue),
-                )
-                .arg(
-                    Arg::new("since")
-                        .long("since")
-                        .help("The date since when we want the report to start.")
-                        .value_parser(clap::builder::ValueParser::new(ttrack_clap_date_parser)),
-                )
-                .arg(
-                    Arg::new("until")
-                        .long("until")
-                        .help("The date until when we want the report to end.")
-                        .value_parser(clap::builder::ValueParser::new(ttrack_clap_date_parser)),
-                )
-                .arg(
-                    Arg::new("today")
-                        .long("today")
-                        .help("Only report data from today")
-                        .action(ArgAction::SetTrue),
-                )
-                .arg(
-                    Arg::new("yesterday")
-                        .long("yesterday")
-                        .help("Only report data from yesterday")
-                        .action(ArgAction::SetTrue),
-                )
-                .arg(
-                    Arg::new("this-week")
-                        .long("this-week")
-                        .help("Only report data from the current week (monday to sunday).")
-                        .action(ArgAction::SetTrue),
-                )
-                .arg(
-                    Arg::new("last-week")
-                        .long("last-week")
-                        .help("Only report data from the previous week (monday to sunday).")
-                        .action(ArgAction::SetTrue),
-                ),
-        )
+#[derive(Parser)]
+#[command(name = "track", visible_alias = "t", about = "Track a new time record")]
+pub struct TrackCommand {
+    #[arg(
+        short,
+        long,
+        help = "The time duration of the record",
+        value_parser = clap::builder::ValueParser::new(ttrack_clap_duration_parser),
+        required = true
+    )]
+    pub time: Duration,
+
+    #[arg(
+        short,
+        long,
+        help = "The description of the time record (what has been done)",
+        required = true
+    )]
+    pub description: String,
+
+    #[arg(
+        short,
+        long,
+        help = "The project with which this record is associated with"
+    )]
+    pub project: Option<String>,
+}
+
+#[derive(Parser)]
+#[command(
+    name = "report",
+    visible_alias = "r",
+    about = "Generate report from the records"
+)]
+pub struct ReportCommand {
+    #[arg(
+        long,
+        help = "The date since when we want the report to start",
+        value_parser = clap::builder::ValueParser::new(ttrack_clap_date_parser)
+    )]
+    pub since: Option<NaiveDate>,
+
+    #[arg(
+        long,
+        help = "The date until when we want the report to end",
+        value_parser = clap::builder::ValueParser::new(ttrack_clap_date_parser)
+    )]
+    pub until: Option<NaiveDate>,
+
+    #[arg(long, help = "Report time by project", default_value_t = false)]
+    pub by_project: bool,
+
+    #[arg(long, help = "Only report data from today", default_value_t = false)]
+    pub today: bool,
+
+    #[arg(
+        long,
+        help = "Only report data from yesterday",
+        default_value_t = false
+    )]
+    pub yesterday: bool,
+
+    #[arg(
+        long,
+        help = "Only report data from the current week (monday to sunday)",
+        default_value_t = false
+    )]
+    pub this_week: bool,
+
+    #[arg(
+        long,
+        help = "Only report data from the current week (monday to sunday)",
+        default_value_t = false
+    )]
+    pub last_week: bool,
+}
+
+#[derive(Subcommand)]
+pub enum Command {
+    Track(TrackCommand),
+    Report(ReportCommand),
+}
+
+#[derive(Parser)]
+#[command(version, about = "A simple, but yet powerfull time tracker", long_about = None)]
+pub struct Cli {
+    #[arg(
+        short,
+        long,
+        help = "File where to store tracking data",
+        required = true
+    )]
+    pub file: PathBuf,
+
+    #[command(subcommand)]
+    pub command: Command,
 }
 
 #[cfg(test)]
 mod tests {
     use chrono::{Days, Local, NaiveDate};
+    use std::time::Duration;
 
     use crate::cli::{ttrack_clap_date_parser, ttrack_clap_duration_parser};
 
@@ -160,7 +182,7 @@ mod tests {
         let result = ttrack_clap_duration_parser("3600");
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 3600);
+        assert_eq!(result.unwrap(), Duration::from_secs(3600));
     }
 
     #[test]
@@ -168,7 +190,7 @@ mod tests {
         let result = ttrack_clap_duration_parser("2h");
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 7200);
+        assert_eq!(result.unwrap(), Duration::from_secs(7200));
     }
 
     #[test]
@@ -176,7 +198,7 @@ mod tests {
         let result = ttrack_clap_duration_parser("30m");
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 1800);
+        assert_eq!(result.unwrap(), Duration::from_secs(1800));
     }
 
     #[test]
@@ -184,6 +206,6 @@ mod tests {
         let result = ttrack_clap_duration_parser("1h30m");
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 5400);
+        assert_eq!(result.unwrap(), Duration::from_secs(5400));
     }
 }

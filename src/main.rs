@@ -2,20 +2,15 @@ mod cli;
 mod cmd;
 mod record;
 
-use cli::get_cli;
-use cmd::handle_report;
-use cmd::handle_track;
+use clap::Parser;
+use cli::Cli;
+use cli::Command;
 
 fn main() {
-    let args = get_cli().get_matches();
-    let filename = args
-        .get_one::<String>("file")
-        .expect("Filename must exists.")
-        .to_string();
+    let args = Cli::parse();
 
-    match args.subcommand() {
-        Some(("track", cmd)) => handle_track(cmd.clone(), filename),
-        Some(("report", cmd)) => handle_report(cmd.clone(), filename),
-        _ => (),
+    match args.command {
+        Command::Track(cmd) => cmd::handle_track(cmd, args.file),
+        Command::Report(cmd) => cmd::handle_report(cmd, args.file),
     }
 }

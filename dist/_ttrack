@@ -15,7 +15,8 @@ _ttrack() {
 
     local context curcontext="$curcontext" state line
     _arguments "${_arguments_options[@]}" \
-'-f+[File where to store tracking data.]: : ' \
+'-f+[File where to store tracking data]:FILE:_files' \
+'--file=[File where to store tracking data]:FILE:_files' \
 '-h[Print help]' \
 '--help[Print help]' \
 '-V[Print version]' \
@@ -31,22 +32,25 @@ _ttrack() {
         case $line[1] in
             (track)
 _arguments "${_arguments_options[@]}" \
-'-t+[The time duration of the record in seconds.]: : ' \
-'-d+[The description of the time record (what has been done).]: : ' \
-'-p+[The project with which this record is associated with.]: : ' \
+'-t+[The time duration of the record]:TIME: ' \
+'--time=[The time duration of the record]:TIME: ' \
+'-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \
+'--description=[The description of the time record (what has been done)]:DESCRIPTION: ' \
+'-p+[The project with which this record is associated with]:PROJECT: ' \
+'--project=[The project with which this record is associated with]:PROJECT: ' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (report)
 _arguments "${_arguments_options[@]}" \
-'--since=[The date since when we want the report to start.]: : ' \
-'--until=[The date until when we want the report to end.]: : ' \
-'--by-project[Report time by project.]' \
+'--since=[The date since when we want the report to start]:SINCE: ' \
+'--until=[The date until when we want the report to end]:UNTIL: ' \
+'--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
-'--this-week[Only report data from the current week (monday to sunday).]' \
-'--last-week[Only report data from the previous week (monday to sunday).]' \
+'--this-week[Only report data from the current week (monday to sunday)]' \
+'--last-week[Only report data from the current week (monday to sunday)]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -87,8 +91,10 @@ esac
 (( $+functions[_ttrack_commands] )) ||
 _ttrack_commands() {
     local commands; commands=(
-'track:Track a new time record.' \
-'report:Generate report from the records.' \
+'track:Track a new time record' \
+'t:Track a new time record' \
+'report:Generate report from the records' \
+'r:Generate report from the records' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'ttrack commands' commands "$@"
@@ -96,8 +102,8 @@ _ttrack_commands() {
 (( $+functions[_ttrack__help_commands] )) ||
 _ttrack__help_commands() {
     local commands; commands=(
-'track:Track a new time record.' \
-'report:Generate report from the records.' \
+'track:Track a new time record' \
+'report:Generate report from the records' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'ttrack help commands' commands "$@"

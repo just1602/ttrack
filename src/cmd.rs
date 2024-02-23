@@ -2,15 +2,19 @@ use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
     io::Write,
+    path::PathBuf,
     time::Duration,
 };
 
-use crate::record::{format_duration, TimeRecord};
-use chrono::{Days, Local, NaiveDate};
-use clap::ArgMatches;
+use crate::cli::ReportCommand;
+use crate::{
+    cli::TrackCommand,
+    record::{format_duration, TimeRecord},
+};
+use chrono::{Days, Local};
 use csv::{ReaderBuilder, WriterBuilder};
 
-pub fn handle_report(cmd: ArgMatches, filename: String) {
+pub fn handle_report(cmd: ReportCommand, filename: PathBuf) {
     let file = File::open(filename).expect("Failed to open data file.");
     let mut csv_reader = ReaderBuilder::new()
         .delimiter(b'|')
@@ -19,13 +23,13 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
 
     let mut data: Vec<TimeRecord> = csv_reader.deserialize().map(|f| f.unwrap()).collect();
 
-    if cmd.get_flag("today") {
+    if cmd.today {
         let today = Local::now().date_naive();
 
         data.retain(|tr| tr.created_at == today);
     }
 
-    if cmd.get_flag("yesterday") {
+    if cmd.yesterday {
         let yesterday = Local::now()
             .checked_sub_days(Days::new(1))
             .unwrap()
@@ -34,13 +38,13 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
         data.retain(|tr| tr.created_at == yesterday)
     }
 
-    if cmd.get_flag("this-week") {
+    if cmd.this_week {
         let week = Local::now().date_naive().week(chrono::Weekday::Mon);
 
         data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
     }
 
-    if cmd.get_flag("last-week") {
+    if cmd.last_week {
         let week = Local::now()
             .date_naive()
             .checked_sub_days(Days::new(7))
@@ -50,15 +54,15 @@ pub fn handle_report(cmd: ArgMatches, filename: String) {
         data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
     }
 
-    if let Some(since) = cmd.get_one::<NaiveDate>("since") {
-        data.retain(|tr| tr.created_at >= *since)
+    if let Some(since) = cmd.since {
+        data.retain(|tr| tr.created_at >= since)
     }
 
-    if let Some(until) = cmd.get_one::<NaiveDate>("until") {
-        data.retain(|tr| tr.created_at <= *until)
+    if let Some(until) = cmd.until {
+        data.retain(|tr| tr.created_at <= until)
     };
 
-    if cmd.get_flag("by-project") {
+    if cmd.by_project {
         report_by_project(data.clone());
     }
     report_total_hours(data);
@@ -92,20 +96,12 @@ fn report_by_project(data: Vec<TimeRecord>) {
     println!("---")
 }
 
-pub fn handle_track(cmd: ArgMatches, filename: String) {
-    let time = cmd
-        .get_one::<u64>("time")
-        .expect("Time duration must be present.");
-    let description = cmd
-        .get_one::<String>("description")
-        .expect("Description must be present.");
-    let project = cmd.get_one::<String>("project");
-
+pub fn handle_track(cmd: TrackCommand, filename: PathBuf) {
     let tr = TimeRecord {
         created_at: Local::now().date_naive(),
-        duration: Duration::from_secs(*time),
-        description: description.to_string(),
-        project: project.cloned(),
+        duration: cmd.time,
+        description: cmd.description,
+        project: cmd.project,
     };
 
     let mut csv_writer = WriterBuilder::new()
@@ -116,11 +112,7 @@ pub fn handle_track(cmd: ArgMatches, filename: String) {
     csv_writer
         .serialize::<TimeRecord>(tr)
         .expect("Failed to serialize the new TimeRecord instance.");
-    let mut file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(filename)
-        .unwrap();
+    let mut file = OpenOptions::new().append(true).open(filename).unwrap();
 
     file.write_all(
         &csv_writer

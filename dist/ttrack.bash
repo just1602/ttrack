@@ -15,8 +15,14 @@ _ttrack() {
             ttrack,help)
                 cmd="ttrack__help"
                 ;;
+            ttrack,r)
+                cmd="ttrack__report"
+                ;;
             ttrack,report)
                 cmd="ttrack__report"
+                ;;
+            ttrack,t)
+                cmd="ttrack__track"
                 ;;
             ttrack,track)
                 cmd="ttrack__track"
@@ -37,12 +43,16 @@ _ttrack() {
 
     case "${cmd}" in
         ttrack)
-            opts="-f -h -V --help --version track report help"
+            opts="-f -h -V --file --help --version track report help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --file)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 -f)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
@@ -111,7 +121,7 @@ _ttrack() {
             return 0
             ;;
         ttrack__report)
-            opts="-h --by-project --since --until --today --yesterday --this-week --last-week --help"
+            opts="-h --since --until --by-project --today --yesterday --this-week --last-week --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -133,17 +143,29 @@ _ttrack() {
             return 0
             ;;
         ttrack__track)
-            opts="-t -d -p -h --help"
+            opts="-t -d -p -h --time --description --project --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --time)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 -t)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
+                --description)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 -d)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --project)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
