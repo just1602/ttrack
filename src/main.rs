@@ -1,5 +1,5 @@
 mod cli;
-mod cmd;
+mod handlers;
 mod record;
 
 use clap::Parser;
@@ -10,7 +10,7 @@ fn main() {
     let args = Cli::parse();
 
     match args.command {
-        Command::Track(cmd) => cmd::handle_track(cmd, args.file),
-        Command::Report(cmd) => cmd::handle_report(cmd, args.file),
+        Command::Track(cmd) => handlers::handle_track(cmd, args.file),
+        Command::Report(cmd) => handlers::handle_report(cmd, args.file),
     }
 }
