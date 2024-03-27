@@ -9,7 +9,7 @@ use std::{
 use crate::cli::ReportCommand;
 use crate::{
     cli::TrackCommand,
-    record::{format_duration, TimeRecord},
+    record::TimeRecord,
 };
 use chrono::{Days, Local};
 use csv::{ReaderBuilder, WriterBuilder};
@@ -120,4 +120,22 @@ pub fn handle_track(cmd: TrackCommand, filename: PathBuf) {
             .expect("Failed to retrieve the CSVWriter's writer."),
     )
     .expect("Failed to write data in file.");
+}
+
+fn format_duration(duration: Duration) -> String {
+    let mut ret = String::from("");
+    let hours = duration.as_secs() / 3600;
+    if hours > 0 {
+        ret.push_str(&format!("{}h", hours));
+    }
+    let mins = (duration.as_secs() - hours * 3600) / 60;
+    if mins > 0 {
+        ret.push_str(&format!("{}m", mins));
+    }
+    let secs = duration.as_secs() - hours * 3600 - mins * 60;
+    if secs > 0 {
+        ret.push_str(&format!("{}s", secs));
+    }
+
+    ret
 }
