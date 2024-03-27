@@ -139,3 +139,38 @@ fn format_duration(duration: Duration) -> String {
 
     ret
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::format_duration;
+
+    #[test]
+    fn format_duration_can_print_hours() {
+        let result = format_duration(Duration::from_secs(3600));
+
+        assert_eq!(result, String::from("1h"));
+    }
+
+    #[test]
+    fn format_duration_can_print_minutes() {
+        let result = format_duration(Duration::from_secs(600));
+
+        assert_eq!(result, String::from("10m"));
+    }
+
+    #[test]
+    fn format_duration_can_print_seconds() {
+        let result = format_duration(Duration::from_secs(55));
+
+        assert_eq!(result, String::from("55s"));
+    }
+
+    #[test]
+    fn format_duration_can_print_combination_of_time_units() {
+        let result = format_duration(Duration::from_secs(5405));
+
+        assert_eq!(result, String::from("1h30m5s"));
+    }
+}
