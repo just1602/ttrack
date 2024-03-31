@@ -9,7 +9,7 @@ include!("src/cli.rs");
 fn main() -> Result<(), Error> {
     let mut cmd = Cli::command();
 
-    for &shell in &vec![Shell::Bash, Shell::Zsh, Shell::Fish] {
+    for &shell in &[Shell::Bash, Shell::Zsh, Shell::Fish] {
         generate_to(shell, &mut cmd, "ttrack", "dist")?;
     }
 
