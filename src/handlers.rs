@@ -1,18 +1,16 @@
-use std::{
-    collections::HashMap,
-    fs::{File, OpenOptions},
-    io::Write,
-    path::PathBuf,
-    time::Duration,
-};
+use core::panic;
+use std::{collections::HashMap, fs::File, path::PathBuf, time::Duration};
 
-use crate::cli::ReportCommand;
+use crate::{
+    cli::ReportCommand,
+    storage::{read_records_from_file, write_record_to_file, write_records_to_file},
+};
 use crate::{
     cli::TrackCommand,
-    record::TimeRecord,
+    records::{CurrentTaskRecord, TimeRecord},
 };
 use chrono::{Days, Local};
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::ReaderBuilder;
 
 pub fn handle_report(cmd: ReportCommand, filename: PathBuf) {
     let file = File::open(filename).expect("Failed to open data file.");
@@ -104,22 +102,136 @@ pub fn handle_track(cmd: TrackCommand, filename: PathBuf) {
         project: cmd.project,
     };
 
-    let mut csv_writer = WriterBuilder::new()
-        .delimiter(b'|')
-        .has_headers(false)
-        .from_writer(vec![]);
+    if let Err(e) = write_record_to_file(&filename, tr) {
+        eprintln!("Failed to write new time record to file: {}", e);
+        std::process::exit(1);
+    }
+}
 
-    csv_writer
-        .serialize::<TimeRecord>(tr)
-        .expect("Failed to serialize the new TimeRecord instance.");
-    let mut file = OpenOptions::new().append(true).open(filename).unwrap();
+pub fn handle_start(cmd: crate::cli::StartCommand, current_task_file: PathBuf) {
+    let current_task = CurrentTaskRecord {
+        created_at: Local::now().naive_local(),
+        end_at: None,
+        description: cmd.description,
+        project: cmd.project,
+    };
 
-    file.write_all(
-        &csv_writer
-            .into_inner()
-            .expect("Failed to retrieve the CSVWriter's writer."),
-    )
-    .expect("Failed to write data in file.");
+    if let Err(e) = write_record_to_file(&current_task_file, current_task) {
+        eprintln!("Failed to write current task data to file: {}", e);
+        std::process::exit(1);
+    }
+}
+
+pub fn handle_pause(current_task_file_path: PathBuf) {
+    let mut records: Vec<CurrentTaskRecord> = match read_records_from_file(&current_task_file_path)
+    {
+        Ok(records) => records,
+        Err(e) => {
+            eprintln!("Failed to read current task records from file: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    if let Some(rec) = records.last_mut() {
+        rec.end_at = Some(Local::now().naive_local());
+    } else {
+        eprintln!("There's no current task to pause")
+    }
+
+    // TODO: cleanup this path hack code and try to write directly to file
+    let tmp_file = format!(
+        "{}.tmp",
+        &current_task_file_path
+            .file_name()
+            .expect("The task file should be a file")
+            .to_str()
+            .expect("This is supposed to be a valid file name")
+    );
+
+    let tmp_file_path = current_task_file_path.with_file_name(tmp_file);
+
+    if let Err(e) = write_records_to_file(&tmp_file_path, &records) {
+        eprintln!("Failed to write current task data to file: {}", e);
+        std::process::exit(1);
+    }
+
+    if let Err(e) = std::fs::rename(tmp_file_path, current_task_file_path) {
+        eprintln!("Failed to persist ttrack current task data: {}", e);
+        std::process::exit(1);
+    }
+}
+
+pub fn handle_resume(current_task_file_path: PathBuf) {
+    let records: Vec<CurrentTaskRecord> = match read_records_from_file(&current_task_file_path) {
+        Ok(records) => records,
+        Err(e) => {
+            eprintln!("Failed to read current task records from file: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let Some(last_record) = records.last() else {
+        eprintln!("There is now current task to resume");
+        std::process::exit(1);
+    };
+
+    let resume_record = CurrentTaskRecord::resume_from(last_record.clone());
+
+    if let Err(e) = write_record_to_file(&current_task_file_path, resume_record) {
+        eprintln!("Failed to write current task data to file: {}", e);
+        std::process::exit(1);
+    }
+}
+
+pub fn handle_stop(current_task_file_path: PathBuf, time_record_file_path: PathBuf) {
+    let mut records: Vec<CurrentTaskRecord> = match read_records_from_file(&current_task_file_path)
+    {
+        Ok(records) => records,
+        Err(e) => {
+            eprintln!("Failed to read current task records from file: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    if let Some(rec) = records.last_mut() {
+        if rec.end_at.is_none() {
+            rec.end_at = Some(Local::now().naive_local());
+        }
+    } else {
+        panic!("There is no current task to stop")
+    }
+
+    let mut total = Duration::default();
+    for record in &records {
+        total += record
+            .end_at
+            .expect("At this point, there should always be a value for `end_at`")
+            .signed_duration_since(record.created_at)
+            .to_std()
+            .expect("Failed to extract task duration");
+    }
+
+    // we need a record to get the description and the project
+    let Some(rec) = &records.last() else {
+        panic!("Failed to retrieve current task information")
+    };
+
+    let tr = TimeRecord {
+        created_at: Local::now().date_naive(),
+        duration: total,
+        description: rec.description.clone(),
+        project: rec.project.clone(),
+    };
+
+    if let Err(e) = write_record_to_file(&time_record_file_path, tr) {
+        eprintln!(
+            "Failed to write new time record from the current task to file: {}",
+            e
+        );
+        std::process::exit(1);
+    }
+
+    File::create(current_task_file_path).expect("Failed to truncate current task state file");
 }
 
 fn format_duration(duration: Duration) -> String {

@@ -116,10 +116,28 @@ pub struct ReportCommand {
     pub last_week: bool,
 }
 
+#[derive(Parser)]
+#[command(name = "start", visible_alias = "s", about = "Start to track a task")]
+pub struct StartCommand {
+    #[arg(short, long, help = "The description of the task we start tracking")]
+    pub description: String,
+
+    #[arg(
+        short,
+        long,
+        help = "The project with which this task will be associated"
+    )]
+    pub project: Option<String>,
+}
+
 #[derive(Subcommand)]
 pub enum Command {
     Track(TrackCommand),
     Report(ReportCommand),
+    Start(StartCommand),
+    Pause,
+    Resume,
+    Stop,
 }
 
 #[derive(Parser)]

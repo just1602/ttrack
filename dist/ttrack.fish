@@ -3,6 +3,10 @@ complete -c ttrack -n "__fish_use_subcommand" -s h -l help -d 'Print help'
 complete -c ttrack -n "__fish_use_subcommand" -s V -l version -d 'Print version'
 complete -c ttrack -n "__fish_use_subcommand" -f -a "track" -d 'Track a new time record'
 complete -c ttrack -n "__fish_use_subcommand" -f -a "report" -d 'Generate report from the records'
+complete -c ttrack -n "__fish_use_subcommand" -f -a "start" -d 'Start to track a task'
+complete -c ttrack -n "__fish_use_subcommand" -f -a "pause"
+complete -c ttrack -n "__fish_use_subcommand" -f -a "resume"
+complete -c ttrack -n "__fish_use_subcommand" -f -a "stop"
 complete -c ttrack -n "__fish_use_subcommand" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c ttrack -n "__fish_seen_subcommand_from track" -s t -l time -d 'The time duration of the record' -r
 complete -c ttrack -n "__fish_seen_subcommand_from track" -s d -l description -d 'The description of the time record (what has been done)' -r
@@ -16,6 +20,16 @@ complete -c ttrack -n "__fish_seen_subcommand_from report" -l yesterday -d 'Only
 complete -c ttrack -n "__fish_seen_subcommand_from report" -l this-week -d 'Only report data from the current week (monday to sunday)'
 complete -c ttrack -n "__fish_seen_subcommand_from report" -l last-week -d 'Only report data from the current week (monday to sunday)'
 complete -c ttrack -n "__fish_seen_subcommand_from report" -s h -l help -d 'Print help'
-complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from help" -f -a "track" -d 'Track a new time record'
-complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from help" -f -a "report" -d 'Generate report from the records'
-complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c ttrack -n "__fish_seen_subcommand_from start" -s d -l description -d 'The description of the task we start tracking' -r
+complete -c ttrack -n "__fish_seen_subcommand_from start" -s p -l project -d 'The project with which this task will be associated' -r
+complete -c ttrack -n "__fish_seen_subcommand_from start" -s h -l help -d 'Print help'
+complete -c ttrack -n "__fish_seen_subcommand_from pause" -s h -l help -d 'Print help'
+complete -c ttrack -n "__fish_seen_subcommand_from resume" -s h -l help -d 'Print help'
+complete -c ttrack -n "__fish_seen_subcommand_from stop" -s h -l help -d 'Print help'
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "track" -d 'Track a new time record'
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "report" -d 'Generate report from the records'
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "start" -d 'Start to track a task'
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "pause"
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "resume"
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "stop"
+complete -c ttrack -n "__fish_seen_subcommand_from help; and not __fish_seen_subcommand_from track; and not __fish_seen_subcommand_from report; and not __fish_seen_subcommand_from start; and not __fish_seen_subcommand_from pause; and not __fish_seen_subcommand_from resume; and not __fish_seen_subcommand_from stop; and not __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
