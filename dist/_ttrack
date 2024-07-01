@@ -14,7 +14,7 @@ _ttrack() {
     fi
 
     local context curcontext="$curcontext" state line
-    _arguments "${_arguments_options[@]}" \
+    _arguments "${_arguments_options[@]}" : \
 '-f+[File where to store tracking data]:FILE:_files' \
 '--file=[File where to store tracking data]:FILE:_files' \
 '-h[Print help]' \
@@ -31,7 +31,19 @@ _ttrack() {
         curcontext="${curcontext%:*:*}:ttrack-command-$line[1]:"
         case $line[1] in
             (track)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
+'-t+[The time duration of the record]:TIME: ' \
+'--time=[The time duration of the record]:TIME: ' \
+'-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \
+'--description=[The description of the time record (what has been done)]:DESCRIPTION: ' \
+'-p+[The project with which this record is associated with]:PROJECT: ' \
+'--project=[The project with which this record is associated with]:PROJECT: ' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(t)
+_arguments "${_arguments_options[@]}" : \
 '-t+[The time duration of the record]:TIME: ' \
 '--time=[The time duration of the record]:TIME: ' \
 '-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \
@@ -43,7 +55,20 @@ _arguments "${_arguments_options[@]}" \
 && ret=0
 ;;
 (report)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
+'--since=[The date since when we want the report to start]:SINCE: ' \
+'--until=[The date until when we want the report to end]:UNTIL: ' \
+'--by-project[Report time by project]' \
+'--today[Only report data from today]' \
+'--yesterday[Only report data from yesterday]' \
+'--this-week[Only report data from the current week (monday to sunday)]' \
+'--last-week[Only report data from the current week (monday to sunday)]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(r)
+_arguments "${_arguments_options[@]}" : \
 '--since=[The date since when we want the report to start]:SINCE: ' \
 '--until=[The date until when we want the report to end]:UNTIL: ' \
 '--by-project[Report time by project]' \
@@ -56,7 +81,17 @@ _arguments "${_arguments_options[@]}" \
 && ret=0
 ;;
 (start)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
+'-d+[The description of the task we start tracking]:DESCRIPTION: ' \
+'--description=[The description of the task we start tracking]:DESCRIPTION: ' \
+'-p+[The project with which this task will be associated]:PROJECT: ' \
+'--project=[The project with which this task will be associated]:PROJECT: ' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(s)
+_arguments "${_arguments_options[@]}" : \
 '-d+[The description of the task we start tracking]:DESCRIPTION: ' \
 '--description=[The description of the task we start tracking]:DESCRIPTION: ' \
 '-p+[The project with which this task will be associated]:PROJECT: ' \
@@ -66,25 +101,25 @@ _arguments "${_arguments_options[@]}" \
 && ret=0
 ;;
 (pause)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (resume)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (stop)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (help)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 ":: :_ttrack__help_commands" \
 "*::: :->help" \
 && ret=0
@@ -96,31 +131,31 @@ _arguments "${_arguments_options[@]}" \
         curcontext="${curcontext%:*:*}:ttrack-help-command-$line[1]:"
         case $line[1] in
             (track)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (report)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (start)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (pause)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (resume)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (stop)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (help)
-_arguments "${_arguments_options[@]}" \
+_arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
         esac
@@ -171,55 +206,55 @@ _ttrack__help__pause_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help pause commands' commands "$@"
 }
-(( $+functions[_ttrack__pause_commands] )) ||
-_ttrack__pause_commands() {
-    local commands; commands=()
-    _describe -t commands 'ttrack pause commands' commands "$@"
-}
 (( $+functions[_ttrack__help__report_commands] )) ||
 _ttrack__help__report_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help report commands' commands "$@"
-}
-(( $+functions[_ttrack__report_commands] )) ||
-_ttrack__report_commands() {
-    local commands; commands=()
-    _describe -t commands 'ttrack report commands' commands "$@"
 }
 (( $+functions[_ttrack__help__resume_commands] )) ||
 _ttrack__help__resume_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help resume commands' commands "$@"
 }
-(( $+functions[_ttrack__resume_commands] )) ||
-_ttrack__resume_commands() {
-    local commands; commands=()
-    _describe -t commands 'ttrack resume commands' commands "$@"
-}
 (( $+functions[_ttrack__help__start_commands] )) ||
 _ttrack__help__start_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help start commands' commands "$@"
-}
-(( $+functions[_ttrack__start_commands] )) ||
-_ttrack__start_commands() {
-    local commands; commands=()
-    _describe -t commands 'ttrack start commands' commands "$@"
 }
 (( $+functions[_ttrack__help__stop_commands] )) ||
 _ttrack__help__stop_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help stop commands' commands "$@"
 }
-(( $+functions[_ttrack__stop_commands] )) ||
-_ttrack__stop_commands() {
-    local commands; commands=()
-    _describe -t commands 'ttrack stop commands' commands "$@"
-}
 (( $+functions[_ttrack__help__track_commands] )) ||
 _ttrack__help__track_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help track commands' commands "$@"
+}
+(( $+functions[_ttrack__pause_commands] )) ||
+_ttrack__pause_commands() {
+    local commands; commands=()
+    _describe -t commands 'ttrack pause commands' commands "$@"
+}
+(( $+functions[_ttrack__report_commands] )) ||
+_ttrack__report_commands() {
+    local commands; commands=()
+    _describe -t commands 'ttrack report commands' commands "$@"
+}
+(( $+functions[_ttrack__resume_commands] )) ||
+_ttrack__resume_commands() {
+    local commands; commands=()
+    _describe -t commands 'ttrack resume commands' commands "$@"
+}
+(( $+functions[_ttrack__start_commands] )) ||
+_ttrack__start_commands() {
+    local commands; commands=()
+    _describe -t commands 'ttrack start commands' commands "$@"
+}
+(( $+functions[_ttrack__stop_commands] )) ||
+_ttrack__stop_commands() {
+    local commands; commands=()
+    _describe -t commands 'ttrack stop commands' commands "$@"
 }
 (( $+functions[_ttrack__track_commands] )) ||
 _ttrack__track_commands() {
