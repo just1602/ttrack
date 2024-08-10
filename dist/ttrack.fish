@@ -37,10 +37,12 @@ complete -c ttrack -n "__fish_ttrack_needs_command" -f -a "pause"
 complete -c ttrack -n "__fish_ttrack_needs_command" -f -a "resume"
 complete -c ttrack -n "__fish_ttrack_needs_command" -f -a "stop"
 complete -c ttrack -n "__fish_ttrack_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c ttrack -n "__fish_ttrack_using_subcommand track" -l date -d 'The date the record is created' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand track" -s t -l time -d 'The time duration of the record' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand track" -s d -l description -d 'The description of the time record (what has been done)' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand track" -s p -l project -d 'The project with which this record is associated with' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand track" -s h -l help -d 'Print help'
+complete -c ttrack -n "__fish_ttrack_using_subcommand t" -l date -d 'The date the record is created' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand t" -s t -l time -d 'The time duration of the record' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand t" -s d -l description -d 'The description of the time record (what has been done)' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand t" -s p -l project -d 'The project with which this record is associated with' -r

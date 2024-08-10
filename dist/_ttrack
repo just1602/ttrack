@@ -32,6 +32,7 @@ _ttrack() {
         case $line[1] in
             (track)
 _arguments "${_arguments_options[@]}" : \
+'--date=[The date the record is created]:DATE: ' \
 '-t+[The time duration of the record]:TIME: ' \
 '--time=[The time duration of the record]:TIME: ' \
 '-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \
@@ -44,6 +45,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (t)
 _arguments "${_arguments_options[@]}" : \
+'--date=[The date the record is created]:DATE: ' \
 '-t+[The time duration of the record]:TIME: ' \
 '--time=[The time duration of the record]:TIME: ' \
 '-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \

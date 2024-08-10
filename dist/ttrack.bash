@@ -350,12 +350,16 @@ _ttrack() {
             return 0
             ;;
         ttrack__track)
-            opts="-t -d -p -h --time --description --project --help"
+            opts="-t -d -p -h --date --time --description --project --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --date)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 --time)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
@@ -388,12 +392,16 @@ _ttrack() {
             return 0
             ;;
         ttrack__track)
-            opts="-t -d -p -h --time --description --project --help"
+            opts="-t -d -p -h --date --time --description --project --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
+                --date)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 --time)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0

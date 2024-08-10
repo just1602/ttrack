@@ -43,6 +43,14 @@ fn ttrack_clap_duration_parser(duration: &str) -> Result<Duration, std::io::Erro
 #[command(name = "track", visible_alias = "t", about = "Track a new time record")]
 pub struct TrackCommand {
     #[arg(
+        long,
+        help = "The date the record is created",
+        required = true,
+        default_value_t = Local::now().date_naive(),
+    )]
+    pub date: NaiveDate,
+
+    #[arg(
         short,
         long,
         help = "The time duration of the record",

@@ -96,7 +96,7 @@ fn report_by_project(data: Vec<TimeRecord>) {
 
 pub fn handle_track(cmd: TrackCommand, filename: PathBuf) {
     let tr = TimeRecord {
-        created_at: Local::now().date_naive(),
+        created_at: cmd.date,
         duration: cmd.time,
         description: cmd.description,
         project: cmd.project,
