@@ -45,6 +45,7 @@ pub struct TrackCommand {
     #[arg(
         long,
         help = "The date the record is created",
+        value_parser = clap::builder::ValueParser::new(ttrack_clap_date_parser),
         default_value_t = Local::now().date_naive(),
     )]
     pub date: NaiveDate,
