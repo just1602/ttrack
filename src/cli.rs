@@ -45,7 +45,6 @@ pub struct TrackCommand {
     #[arg(
         long,
         help = "The date the record is created",
-        required = true,
         default_value_t = Local::now().date_naive(),
     )]
     pub date: NaiveDate,
