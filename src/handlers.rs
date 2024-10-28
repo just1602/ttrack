@@ -61,20 +61,22 @@ pub fn handle_report(cmd: ReportCommand, filename: PathBuf) {
     };
 
     if cmd.by_project {
-        report_by_project(data.clone());
+        report_by_project(&data);
     }
-    report_total_hours(data);
+
+    report_total_hours(&data);
 }
 
-fn report_total_hours(data: Vec<TimeRecord>) {
-    let total_duration = data.into_iter().map(|tr| tr.duration).sum();
+fn report_total_hours(data: &[TimeRecord]) {
+    let total_duration = data.iter().map(|tr| tr.duration).sum();
 
     println!("total hours: {}", format_duration(total_duration));
 }
 
-fn report_by_project(data: Vec<TimeRecord>) {
     let mut duration_by_project: HashMap<String, Duration> = HashMap::new();
-    data.into_iter().for_each(|tr| {
+fn report_by_project(data: &Vec<TimeRecord>) {
+
+    data.iter().for_each(|tr| {
         if let Some(project) = &tr.project {
             if let Some(cur) = duration_by_project.get(project) {
                 duration_by_project.insert(project.to_string(), *cur + tr.duration);
