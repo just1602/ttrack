@@ -1,5 +1,5 @@
 use core::panic;
-use std::{collections::HashMap, fs::File, path::PathBuf, time::Duration};
+use std::{collections::BTreeMap, fs::File, path::PathBuf, time::Duration};
 
 use crate::{
     cli::ReportCommand,
@@ -73,8 +73,9 @@ fn report_total_hours(data: &[TimeRecord]) {
     println!("total hours: {}", format_duration(total_duration));
 }
 
-    let mut duration_by_project: HashMap<String, Duration> = HashMap::new();
 fn report_by_project(data: &Vec<TimeRecord>) {
+    // Use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
+    let mut duration_by_project: BTreeMap<String, Duration> = BTreeMap::new();
 
     data.iter().for_each(|tr| {
         if let Some(project) = &tr.project {
