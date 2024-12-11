@@ -32,34 +32,34 @@ _ttrack() {
         case $line[1] in
             (track)
 _arguments "${_arguments_options[@]}" : \
-'--date=[The date the record is created]:DATE: ' \
-'-t+[The time duration of the record]:TIME: ' \
-'--time=[The time duration of the record]:TIME: ' \
-'-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \
-'--description=[The description of the time record (what has been done)]:DESCRIPTION: ' \
-'-p+[The project with which this record is associated with]:PROJECT: ' \
-'--project=[The project with which this record is associated with]:PROJECT: ' \
+'--date=[The date the record is created]:DATE:_default' \
+'-t+[The time duration of the record]:TIME:_default' \
+'--time=[The time duration of the record]:TIME:_default' \
+'-d+[The description of the time record (what has been done)]:DESCRIPTION:_default' \
+'--description=[The description of the time record (what has been done)]:DESCRIPTION:_default' \
+'-p+[The project with which this record is associated with]:PROJECT:_default' \
+'--project=[The project with which this record is associated with]:PROJECT:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (t)
 _arguments "${_arguments_options[@]}" : \
-'--date=[The date the record is created]:DATE: ' \
-'-t+[The time duration of the record]:TIME: ' \
-'--time=[The time duration of the record]:TIME: ' \
-'-d+[The description of the time record (what has been done)]:DESCRIPTION: ' \
-'--description=[The description of the time record (what has been done)]:DESCRIPTION: ' \
-'-p+[The project with which this record is associated with]:PROJECT: ' \
-'--project=[The project with which this record is associated with]:PROJECT: ' \
+'--date=[The date the record is created]:DATE:_default' \
+'-t+[The time duration of the record]:TIME:_default' \
+'--time=[The time duration of the record]:TIME:_default' \
+'-d+[The description of the time record (what has been done)]:DESCRIPTION:_default' \
+'--description=[The description of the time record (what has been done)]:DESCRIPTION:_default' \
+'-p+[The project with which this record is associated with]:PROJECT:_default' \
+'--project=[The project with which this record is associated with]:PROJECT:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (report)
 _arguments "${_arguments_options[@]}" : \
-'--since=[The date since when we want the report to start]:SINCE: ' \
-'--until=[The date until when we want the report to end]:UNTIL: ' \
+'--since=[The date since when we want the report to start]:SINCE:_default' \
+'--until=[The date until when we want the report to end]:UNTIL:_default' \
 '--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
@@ -71,8 +71,8 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (r)
 _arguments "${_arguments_options[@]}" : \
-'--since=[The date since when we want the report to start]:SINCE: ' \
-'--until=[The date until when we want the report to end]:UNTIL: ' \
+'--since=[The date since when we want the report to start]:SINCE:_default' \
+'--until=[The date until when we want the report to end]:UNTIL:_default' \
 '--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
@@ -84,20 +84,20 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (start)
 _arguments "${_arguments_options[@]}" : \
-'-d+[The description of the task we start tracking]:DESCRIPTION: ' \
-'--description=[The description of the task we start tracking]:DESCRIPTION: ' \
-'-p+[The project with which this task will be associated]:PROJECT: ' \
-'--project=[The project with which this task will be associated]:PROJECT: ' \
+'-d+[The description of the task we start tracking]:DESCRIPTION:_default' \
+'--description=[The description of the task we start tracking]:DESCRIPTION:_default' \
+'-p+[The project with which this task will be associated]:PROJECT:_default' \
+'--project=[The project with which this task will be associated]:PROJECT:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (s)
 _arguments "${_arguments_options[@]}" : \
-'-d+[The description of the task we start tracking]:DESCRIPTION: ' \
-'--description=[The description of the task we start tracking]:DESCRIPTION: ' \
-'-p+[The project with which this task will be associated]:PROJECT: ' \
-'--project=[The project with which this task will be associated]:PROJECT: ' \
+'-d+[The description of the task we start tracking]:DESCRIPTION:_default' \
+'--description=[The description of the task we start tracking]:DESCRIPTION:_default' \
+'-p+[The project with which this task will be associated]:PROJECT:_default' \
+'--project=[The project with which this task will be associated]:PROJECT:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
