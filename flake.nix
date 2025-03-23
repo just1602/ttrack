@@ -8,11 +8,10 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
+      ...
     }:
-
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -20,6 +19,10 @@
       in
       {
         packages = {
+          default = pkgs.callPackage nix/package.nix { };
+        };
+
+        legacyPackages = {
           default = pkgs.callPackage nix/package.nix { };
         };
 
@@ -31,6 +34,10 @@
             ];
           };
         };
+
       }
-    );
+    )
+    // {
+      overlays.default = final: prev: { ttrack = prev.pkgs.callPackage nix/package.nix { }; };
+    };
 }
