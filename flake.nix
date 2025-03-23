@@ -38,6 +38,8 @@
       }
     )
     // {
-      overlays.default = final: prev: { ttrack = prev.pkgs.callPackage nix/package.nix { }; };
+      overlays.default = final: prev: {
+        ttrack = prev.pkgs.callPackage nix/package.nix { };
+      };
     };
 }
