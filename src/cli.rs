@@ -22,7 +22,7 @@ fn ttrack_clap_duration_parser(duration: &str) -> Result<Duration, std::io::Erro
 
     let mut secs = 0;
     let mut start_idx = 0;
-    for (idx, c) in duration.chars().enumerate() {
+    for (idx, c) in duration.char_indices() {
         match c {
             'h' => {
                 secs += duration[start_idx..idx].parse::<u64>().unwrap() * 3600;
