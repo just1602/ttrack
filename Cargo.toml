@@ -9,7 +9,7 @@ edition = "2024"
 csv = "1.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
 chrono = { version = "0.4.43", features = ["serde"] }
-clap = { version = "4.5.55", features = ["derive"] }
+clap = { version = "4.5.56", features = ["derive"] }
 
 # Dependencies to generate shells complication
 [build-dependencies]
