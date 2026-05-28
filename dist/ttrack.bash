@@ -17,55 +17,55 @@ _ttrack() {
                 cmd="ttrack"
                 ;;
             ttrack,help)
-                cmd="ttrack__help"
+                cmd="ttrack__subcmd__help"
                 ;;
             ttrack,pause)
-                cmd="ttrack__pause"
+                cmd="ttrack__subcmd__pause"
                 ;;
             ttrack,r)
-                cmd="ttrack__report"
+                cmd="ttrack__subcmd__report"
                 ;;
             ttrack,report)
-                cmd="ttrack__report"
+                cmd="ttrack__subcmd__report"
                 ;;
             ttrack,resume)
-                cmd="ttrack__resume"
+                cmd="ttrack__subcmd__resume"
                 ;;
             ttrack,s)
-                cmd="ttrack__start"
+                cmd="ttrack__subcmd__start"
                 ;;
             ttrack,start)
-                cmd="ttrack__start"
+                cmd="ttrack__subcmd__start"
                 ;;
             ttrack,stop)
-                cmd="ttrack__stop"
+                cmd="ttrack__subcmd__stop"
                 ;;
             ttrack,t)
-                cmd="ttrack__track"
+                cmd="ttrack__subcmd__track"
                 ;;
             ttrack,track)
-                cmd="ttrack__track"
+                cmd="ttrack__subcmd__track"
                 ;;
-            ttrack__help,help)
-                cmd="ttrack__help__help"
+            ttrack__subcmd__help,help)
+                cmd="ttrack__subcmd__help__subcmd__help"
                 ;;
-            ttrack__help,pause)
-                cmd="ttrack__help__pause"
+            ttrack__subcmd__help,pause)
+                cmd="ttrack__subcmd__help__subcmd__pause"
                 ;;
-            ttrack__help,report)
-                cmd="ttrack__help__report"
+            ttrack__subcmd__help,report)
+                cmd="ttrack__subcmd__help__subcmd__report"
                 ;;
-            ttrack__help,resume)
-                cmd="ttrack__help__resume"
+            ttrack__subcmd__help,resume)
+                cmd="ttrack__subcmd__help__subcmd__resume"
                 ;;
-            ttrack__help,start)
-                cmd="ttrack__help__start"
+            ttrack__subcmd__help,start)
+                cmd="ttrack__subcmd__help__subcmd__start"
                 ;;
-            ttrack__help,stop)
-                cmd="ttrack__help__stop"
+            ttrack__subcmd__help,stop)
+                cmd="ttrack__subcmd__help__subcmd__stop"
                 ;;
-            ttrack__help,track)
-                cmd="ttrack__help__track"
+            ttrack__subcmd__help,track)
+                cmd="ttrack__subcmd__help__subcmd__track"
                 ;;
             *)
                 ;;
@@ -95,7 +95,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help)
+        ttrack__subcmd__help)
             opts="track report start pause resume stop help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -109,7 +109,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__help)
+        ttrack__subcmd__help__subcmd__help)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -123,7 +123,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__pause)
+        ttrack__subcmd__help__subcmd__pause)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -137,7 +137,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__report)
+        ttrack__subcmd__help__subcmd__report)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -151,7 +151,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__resume)
+        ttrack__subcmd__help__subcmd__resume)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -165,7 +165,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__start)
+        ttrack__subcmd__help__subcmd__start)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -179,7 +179,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__stop)
+        ttrack__subcmd__help__subcmd__stop)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -193,7 +193,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__help__track)
+        ttrack__subcmd__help__subcmd__track)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -207,7 +207,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__pause)
+        ttrack__subcmd__pause)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -221,8 +221,8 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__report)
-            opts="-h --since --until --by-project --today --yesterday --this-week --last-week --help"
+        ttrack__subcmd__report)
+            opts="-h --since --until --date --by-project --today --yesterday --this-week --last-week --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -236,6 +236,10 @@ _ttrack() {
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
+                --date)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -243,7 +247,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__resume)
+        ttrack__subcmd__resume)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -257,7 +261,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__start)
+        ttrack__subcmd__start)
             opts="-d -p -h --description --project --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -287,7 +291,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__stop)
+        ttrack__subcmd__stop)
             opts="-h --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -301,7 +305,7 @@ _ttrack() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        ttrack__track)
+        ttrack__subcmd__track)
             opts="-t -d -p -h --date --time --description --project --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )

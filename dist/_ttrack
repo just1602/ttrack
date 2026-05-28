@@ -60,6 +60,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '--since=[The date since when we want the report to start]:SINCE:_default' \
 '--until=[The date until when we want the report to end]:UNTIL:_default' \
+'(--since --until)--date=[The specific date we want to report on]:DATE:_default' \
 '--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
@@ -73,6 +74,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '--since=[The date since when we want the report to start]:SINCE:_default' \
 '--until=[The date until when we want the report to end]:UNTIL:_default' \
+'(--since --until)--date=[The specific date we want to report on]:DATE:_default' \
 '--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
@@ -122,7 +124,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (help)
 _arguments "${_arguments_options[@]}" : \
-":: :_ttrack__help_commands" \
+":: :_ttrack__subcmd__help_commands" \
 "*::: :->help" \
 && ret=0
 
@@ -185,8 +187,8 @@ _ttrack_commands() {
     )
     _describe -t commands 'ttrack commands' commands "$@"
 }
-(( $+functions[_ttrack__help_commands] )) ||
-_ttrack__help_commands() {
+(( $+functions[_ttrack__subcmd__help_commands] )) ||
+_ttrack__subcmd__help_commands() {
     local commands; commands=(
 'track:Track a new time record' \
 'report:Generate report from the records' \
@@ -198,68 +200,68 @@ _ttrack__help_commands() {
     )
     _describe -t commands 'ttrack help commands' commands "$@"
 }
-(( $+functions[_ttrack__help__help_commands] )) ||
-_ttrack__help__help_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__help_commands] )) ||
+_ttrack__subcmd__help__subcmd__help_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help help commands' commands "$@"
 }
-(( $+functions[_ttrack__help__pause_commands] )) ||
-_ttrack__help__pause_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__pause_commands] )) ||
+_ttrack__subcmd__help__subcmd__pause_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help pause commands' commands "$@"
 }
-(( $+functions[_ttrack__help__report_commands] )) ||
-_ttrack__help__report_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__report_commands] )) ||
+_ttrack__subcmd__help__subcmd__report_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help report commands' commands "$@"
 }
-(( $+functions[_ttrack__help__resume_commands] )) ||
-_ttrack__help__resume_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__resume_commands] )) ||
+_ttrack__subcmd__help__subcmd__resume_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help resume commands' commands "$@"
 }
-(( $+functions[_ttrack__help__start_commands] )) ||
-_ttrack__help__start_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__start_commands] )) ||
+_ttrack__subcmd__help__subcmd__start_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help start commands' commands "$@"
 }
-(( $+functions[_ttrack__help__stop_commands] )) ||
-_ttrack__help__stop_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__stop_commands] )) ||
+_ttrack__subcmd__help__subcmd__stop_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help stop commands' commands "$@"
 }
-(( $+functions[_ttrack__help__track_commands] )) ||
-_ttrack__help__track_commands() {
+(( $+functions[_ttrack__subcmd__help__subcmd__track_commands] )) ||
+_ttrack__subcmd__help__subcmd__track_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack help track commands' commands "$@"
 }
-(( $+functions[_ttrack__pause_commands] )) ||
-_ttrack__pause_commands() {
+(( $+functions[_ttrack__subcmd__pause_commands] )) ||
+_ttrack__subcmd__pause_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack pause commands' commands "$@"
 }
-(( $+functions[_ttrack__report_commands] )) ||
-_ttrack__report_commands() {
+(( $+functions[_ttrack__subcmd__report_commands] )) ||
+_ttrack__subcmd__report_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack report commands' commands "$@"
 }
-(( $+functions[_ttrack__resume_commands] )) ||
-_ttrack__resume_commands() {
+(( $+functions[_ttrack__subcmd__resume_commands] )) ||
+_ttrack__subcmd__resume_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack resume commands' commands "$@"
 }
-(( $+functions[_ttrack__start_commands] )) ||
-_ttrack__start_commands() {
+(( $+functions[_ttrack__subcmd__start_commands] )) ||
+_ttrack__subcmd__start_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack start commands' commands "$@"
 }
-(( $+functions[_ttrack__stop_commands] )) ||
-_ttrack__stop_commands() {
+(( $+functions[_ttrack__subcmd__stop_commands] )) ||
+_ttrack__subcmd__stop_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack stop commands' commands "$@"
 }
-(( $+functions[_ttrack__track_commands] )) ||
-_ttrack__track_commands() {
+(( $+functions[_ttrack__subcmd__track_commands] )) ||
+_ttrack__subcmd__track_commands() {
     local commands; commands=()
     _describe -t commands 'ttrack track commands' commands "$@"
 }

@@ -49,6 +49,7 @@ complete -c ttrack -n "__fish_ttrack_using_subcommand t" -s p -l project -d 'The
 complete -c ttrack -n "__fish_ttrack_using_subcommand t" -s h -l help -d 'Print help'
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l since -d 'The date since when we want the report to start' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l until -d 'The date until when we want the report to end' -r
+complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l date -d 'The specific date we want to report on' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l by-project -d 'Report time by project'
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l today -d 'Only report data from today'
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l yesterday -d 'Only report data from yesterday'
@@ -57,6 +58,7 @@ complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l last-week -d 'O
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -s h -l help -d 'Print help'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l since -d 'The date since when we want the report to start' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l until -d 'The date until when we want the report to end' -r
+complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l date -d 'The specific date we want to report on' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l by-project -d 'Report time by project'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l today -d 'Only report data from today'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l yesterday -d 'Only report data from yesterday'
