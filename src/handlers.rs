@@ -52,6 +52,10 @@ pub fn handle_report(cmd: ReportCommand, filename: PathBuf) {
         data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
     }
 
+    if let Some(date) = cmd.date {
+        data.retain(|tr| tr.created_at == date);
+    }
+
     if let Some(since) = cmd.since {
         data.retain(|tr| tr.created_at >= since)
     }

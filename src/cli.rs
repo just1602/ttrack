@@ -96,6 +96,14 @@ pub struct ReportCommand {
     )]
     pub until: Option<NaiveDate>,
 
+    #[arg(
+        long,
+        help = "The specific date we want to report on",
+        value_parser = clap::builder::ValueParser::new(ttrack_clap_date_parser),
+        conflicts_with_all(["since", "until"])
+    )]
+    pub date: Option<NaiveDate>,
+
     #[arg(long, help = "Report time by project", default_value_t = false)]
     pub by_project: bool,
 
