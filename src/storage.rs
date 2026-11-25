@@ -152,13 +152,26 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, path::Path, time::Duration};
 
+    use chrono::NaiveDate;
     use tempfile::tempdir;
 
     use crate::records::TimeRecord;
 
-    use super::{StorageError, read_records_from_file};
+    use super::{
+        StorageError, read_records_from_file, replace_file_with_records, write_record_to_file,
+        write_records_to_file,
+    };
+
+    fn record(description: &str) -> TimeRecord {
+        TimeRecord {
+            created_at: NaiveDate::from_ymd_opt(2026, 11, 25).unwrap(),
+            duration: Duration::from_secs(60),
+            description: description.to_string(),
+            project: None,
+        }
+    }
 
     #[test]
     fn missing_file_maps_to_open_for_read() {
@@ -191,5 +204,74 @@ mod tests {
         let rendered = error.to_string();
         assert!(rendered.contains("Failed to deserialize records from CSV"));
         assert!(rendered.contains("invalid digit found in string"));
+    }
+
+    #[test]
+    fn write_records_to_file_truncates_stale_content() {
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir.path().join("data.csv");
+
+        write_record_to_file(&data_file, record("stale")).expect("Failed to write stale record");
+        write_records_to_file(&data_file, &vec![record("fresh")]).expect("Failed to write records");
+
+        let records =
+            read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
+        assert_eq!(records.len(), 1, "stale rows were not truncated");
+        assert_eq!(records[0].description, "fresh");
+    }
+
+    #[test]
+    fn replace_file_with_records_discards_stale_temp_file() {
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir.path().join("data.csv");
+        let temp_file = temp_dir.path().join("data.csv.tmp");
+
+        write_record_to_file(&temp_file, record("stale"))
+            .expect("Failed to write stale temp record");
+        assert!(temp_file.exists());
+
+        replace_file_with_records(&data_file, &vec![record("fresh")])
+            .expect("Failed to replace file with records");
+
+        let records =
+            read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
+        assert_eq!(records.len(), 1, "stale temp rows were appended");
+        assert_eq!(records[0].description, "fresh");
+        assert!(
+            !temp_file.exists(),
+            "temp file should have been renamed away"
+        );
+    }
+
+    #[test]
+    fn replace_file_with_records_rejects_path_without_file_name() {
+        let error = replace_file_with_records(Path::new(""), &vec![record("fresh")]).unwrap_err();
+
+        assert!(
+            matches!(
+                error.current_context(),
+                StorageError::MissingFileName { .. }
+            ),
+            "unexpected error: {error:?}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn replace_file_with_records_supports_non_utf8_file_name() {
+        use std::os::unix::ffi::OsStringExt;
+
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir
+            .path()
+            .join(std::ffi::OsString::from_vec(b"data-\xff.csv".to_vec()));
+
+        replace_file_with_records(&data_file, &vec![record("fresh")])
+            .expect("Failed to replace file with records");
+
+        let records =
+            read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].description, "fresh");
     }
 }
