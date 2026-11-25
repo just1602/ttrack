@@ -4,7 +4,7 @@ use rootcause::{bail, prelude::ResultExt};
 
 use crate::{
     cli::ReportCommand,
-    storage::{read_records_from_file, write_record_to_file, write_records_to_file},
+    storage::{read_records_from_file, replace_file_with_records, write_record_to_file},
 };
 use crate::{
     cli::TrackCommand,
@@ -141,24 +141,9 @@ pub fn handle_pause(current_task_file_path: PathBuf) -> rootcause::Result<()> {
         bail!("There's no current task to pause");
     }
 
-    let Some(file_name) = current_task_file_path.file_name() else {
-        bail!(
-            "Current task state path has no file name: {}",
-            current_task_file_path.display()
-        );
-    };
-
-    let mut tmp_file = file_name.to_os_string();
-    tmp_file.push(".tmp");
-    let tmp_file_path = current_task_file_path.with_file_name(tmp_file);
-
-    write_records_to_file(&tmp_file_path, &records)
-        .context("Failed to write current task data to temp file")
-        .attach_with(|| format!("path: {}", tmp_file_path.display()))?;
-
-    std::fs::rename(&tmp_file_path, &current_task_file_path)
+    replace_file_with_records(&current_task_file_path, &records)
         .context("Failed to persist current task state")
-        .attach_with(|| format!("temp file: {}", tmp_file_path.display()))?;
+        .attach_with(|| format!("path: {}", current_task_file_path.display()))?;
 
     Ok(())
 }

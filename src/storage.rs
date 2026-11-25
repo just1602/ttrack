@@ -24,6 +24,12 @@ pub enum StorageError {
 
     #[error("Failed to flush CSV data: {}", path.display())]
     FlushCsv { path: PathBuf },
+
+    #[error("File path has no file name: {}", path.display())]
+    MissingFileName { path: PathBuf },
+
+    #[error("Failed to rename temporary file {} to {}", from.display(), to.display())]
+    Rename { from: PathBuf, to: PathBuf },
 }
 
 pub type StorageResult<T> = rootcause::Result<T, StorageError>;
@@ -111,6 +117,34 @@ where
 
     csv_writer.flush().context(StorageError::FlushCsv {
         path: file_path.to_path_buf(),
+    })?;
+
+    Ok(())
+}
+
+fn temp_path_for(file_path: &Path) -> StorageResult<PathBuf> {
+    let Some(file_name) = file_path.file_name() else {
+        return Err(rootcause::report!(StorageError::MissingFileName {
+            path: file_path.to_path_buf(),
+        }));
+    };
+
+    let mut temp_file_name = file_name.to_os_string();
+    temp_file_name.push(".tmp");
+    Ok(file_path.with_file_name(temp_file_name))
+}
+
+pub fn replace_file_with_records<R>(file_path: &Path, records: &Vec<R>) -> StorageResult<()>
+where
+    R: Serialize,
+{
+    let temp_file_path = temp_path_for(file_path)?;
+
+    write_records_to_file(&temp_file_path, records)?;
+
+    std::fs::rename(&temp_file_path, file_path).context(StorageError::Rename {
+        from: temp_file_path,
+        to: file_path.to_path_buf(),
     })?;
 
     Ok(())
