@@ -135,11 +135,15 @@ pub fn handle_pause(current_task_file_path: PathBuf) -> rootcause::Result<()> {
         .context("Failed to read current task records")
         .attach_with(|| format!("path: {}", current_task_file_path.display()))?;
 
-    if let Some(rec) = records.last_mut() {
-        rec.end_at = Some(Local::now().naive_local());
-    } else {
+    let Some(rec) = records.last_mut() else {
         bail!("There's no current task to pause");
+    };
+
+    if rec.end_at.is_some() {
+        bail!("Current task is already paused");
     }
+
+    rec.end_at = Some(Local::now().naive_local());
 
     replace_file_with_records(&current_task_file_path, &records)
         .context("Failed to persist current task state")
@@ -156,6 +160,10 @@ pub fn handle_resume(current_task_file_path: PathBuf) -> rootcause::Result<()> {
     let Some(last_record) = records.last() else {
         bail!("There is no current task to resume");
     };
+
+    if last_record.end_at.is_none() {
+        bail!("Current task is already running");
+    }
 
     let resume_record = CurrentTaskRecord::resume_from(last_record.clone());
 
