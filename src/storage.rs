@@ -117,24 +117,18 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf};
+    use std::fs;
+
+    use tempfile::tempdir;
 
     use crate::records::TimeRecord;
 
     use super::{StorageError, read_records_from_file};
 
-    fn temp_dir(label: &str) -> PathBuf {
-        let dir =
-            std::env::temp_dir().join(format!("ttrack-a2-storage-{}-{label}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("Failed to create test temp dir");
-        dir
-    }
-
     #[test]
     fn missing_file_maps_to_open_for_read() {
-        let dir = temp_dir("missing");
-        let data_file = dir.join("data.csv");
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir.path().join("data.csv");
 
         let error = read_records_from_file::<TimeRecord>(&data_file).unwrap_err();
 
@@ -149,8 +143,8 @@ mod tests {
 
     #[test]
     fn malformed_csv_maps_to_deserialize_csv() {
-        let dir = temp_dir("malformed");
-        let data_file = dir.join("data.csv");
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir.path().join("data.csv");
         fs::write(&data_file, "2026-11-25|not-a-number\n").expect("Failed to write test data");
 
         let error = read_records_from_file::<TimeRecord>(&data_file).unwrap_err();
