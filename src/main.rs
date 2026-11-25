@@ -11,7 +11,7 @@ use clap::Parser;
 use cli::Cli;
 use cli::Command;
 
-fn main() {
+fn main() -> rootcause::Result<()> {
     let args = Cli::parse();
 
     // TODO: move all this to a function
@@ -26,9 +26,10 @@ fn main() {
     let current_task_directory = Path::new(&current_task_directory);
 
     if !current_task_directory.exists()
-        && let Err(e) = fs::create_dir_all(current_task_directory) {
-            panic!("Failed to create ttrack data folder: {}", e)
-        }
+        && let Err(e) = fs::create_dir_all(current_task_directory)
+    {
+        panic!("Failed to create ttrack data folder: {}", e)
+    }
 
     let Some(data_file_name) = args.file.file_name() else {
         panic!("Failed to extract data filename from args")
