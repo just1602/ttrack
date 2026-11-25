@@ -1,19 +1,40 @@
 use std::{
     fs::{File, OpenOptions},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use csv::{ReaderBuilder, WriterBuilder};
 use rootcause::prelude::ResultExt;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-pub fn read_records_from_file<R>(file_path: &Path) -> rootcause::Result<Vec<R>>
+#[derive(Debug, Error)]
+pub enum StorageError {
+    #[error("Failed to open data file for reading: {}", path.display())]
+    OpenForRead { path: PathBuf },
+
+    #[error("Failed to deserialize records from CSV: {}", path.display())]
+    DeserializeCsv { path: PathBuf },
+
+    #[error("Failed to open data file for writing: {}", path.display())]
+    OpenForWrite { path: PathBuf },
+
+    #[error("Failed to serialize record to CSV: {}", path.display())]
+    SerializeCsv { path: PathBuf },
+
+    #[error("Failed to flush CSV data: {}", path.display())]
+    FlushCsv { path: PathBuf },
+}
+
+pub type StorageResult<T> = rootcause::Result<T, StorageError>;
+
+pub fn read_records_from_file<R>(file_path: &Path) -> StorageResult<Vec<R>>
 where
     R: for<'a> Deserialize<'a>,
 {
-    let file = File::open(file_path)
-        .context("Failed to open data file")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+    let file = File::open(file_path).context(StorageError::OpenForRead {
+        path: file_path.to_path_buf(),
+    })?;
 
     let mut csv_reader = ReaderBuilder::new()
         .delimiter(b'|')
@@ -23,13 +44,14 @@ where
     let records = csv_reader
         .deserialize()
         .collect::<Result<Vec<R>, csv::Error>>()
-        .context("Failed to deserialize records from CSV")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+        .context(StorageError::DeserializeCsv {
+            path: file_path.to_path_buf(),
+        })?;
 
     Ok(records)
 }
 
-pub fn write_record_to_file<R>(file_path: &Path, record: R) -> rootcause::Result<()>
+pub fn write_record_to_file<R>(file_path: &Path, record: R) -> StorageResult<()>
 where
     R: Serialize,
 {
@@ -37,8 +59,9 @@ where
         .create(true)
         .append(true)
         .open(file_path)
-        .context("Failed to open data file for writing")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+        .context(StorageError::OpenForWrite {
+            path: file_path.to_path_buf(),
+        })?;
 
     // TODO: Extract csv_writer creation in a function
     let mut csv_writer = WriterBuilder::new()
@@ -48,18 +71,18 @@ where
 
     csv_writer
         .serialize(record)
-        .context("Failed to serialize record to CSV")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+        .context(StorageError::SerializeCsv {
+            path: file_path.to_path_buf(),
+        })?;
 
-    csv_writer
-        .flush()
-        .context("Failed to flush CSV data")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+    csv_writer.flush().context(StorageError::FlushCsv {
+        path: file_path.to_path_buf(),
+    })?;
 
     Ok(())
 }
 
-pub fn write_records_to_file<R>(file_path: &Path, records: &Vec<R>) -> rootcause::Result<()>
+pub fn write_records_to_file<R>(file_path: &Path, records: &Vec<R>) -> StorageResult<()>
 where
     R: Serialize,
 {
@@ -67,8 +90,9 @@ where
         .create(true)
         .append(true)
         .open(file_path)
-        .context("Failed to open data file for writing")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+        .context(StorageError::OpenForWrite {
+            path: file_path.to_path_buf(),
+        })?;
 
     // TODO: Extract csv_writer creation in a function
     let mut csv_writer = WriterBuilder::new()
@@ -79,14 +103,14 @@ where
     for record in records {
         csv_writer
             .serialize(record)
-            .context("Failed to serialize record to CSV")
-            .attach_with(|| format!("path: {}", file_path.display()))?;
+            .context(StorageError::SerializeCsv {
+                path: file_path.to_path_buf(),
+            })?;
     }
 
-    csv_writer
-        .flush()
-        .context("Failed to flush CSV data")
-        .attach_with(|| format!("path: {}", file_path.display()))?;
+    csv_writer.flush().context(StorageError::FlushCsv {
+        path: file_path.to_path_buf(),
+    })?;
 
     Ok(())
 }
