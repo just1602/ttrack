@@ -88,7 +88,8 @@ where
 {
     let file = OpenOptions::new()
         .create(true)
-        .append(true)
+        .write(true)
+        .truncate(true)
         .open(file_path)
         .context(StorageError::OpenForWrite {
             path: file_path.to_path_buf(),
