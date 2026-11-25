@@ -5,7 +5,7 @@ use std::{
 
 use csv::{ReaderBuilder, WriterBuilder};
 use rootcause::prelude::ResultExt;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -30,7 +30,7 @@ pub type StorageResult<T> = rootcause::Result<T, StorageError>;
 
 pub fn read_records_from_file<R>(file_path: &Path) -> StorageResult<Vec<R>>
 where
-    R: for<'a> Deserialize<'a>,
+    R: DeserializeOwned,
 {
     let file = File::open(file_path).context(StorageError::OpenForRead {
         path: file_path.to_path_buf(),
