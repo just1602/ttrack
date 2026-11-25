@@ -182,13 +182,15 @@ pub fn handle_stop(
         .context("Failed to read current task records")
         .attach_with(|| format!("path: {}", current_task_file_path.display()))?;
 
-    if let Some(rec) = records.last_mut() {
-        if rec.end_at.is_none() {
-            rec.end_at = Some(Local::now().naive_local());
-        }
-    } else {
+    let Some(rec) = records.last_mut() else {
         bail!("There is no current task to stop");
+    };
+
+    if rec.end_at.is_some() {
+        bail!("Current task is already paused");
     }
+
+    rec.end_at = Some(Local::now().naive_local());
 
     let mut total = Duration::default();
     for record in &records {
