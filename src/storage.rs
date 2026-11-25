@@ -114,3 +114,53 @@ where
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{fs, path::PathBuf};
+
+    use crate::records::TimeRecord;
+
+    use super::{StorageError, read_records_from_file};
+
+    fn temp_dir(label: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("ttrack-a2-storage-{}-{label}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("Failed to create test temp dir");
+        dir
+    }
+
+    #[test]
+    fn missing_file_maps_to_open_for_read() {
+        let dir = temp_dir("missing");
+        let data_file = dir.join("data.csv");
+
+        let error = read_records_from_file::<TimeRecord>(&data_file).unwrap_err();
+
+        assert!(
+            matches!(error.current_context(), StorageError::OpenForRead { path } if path == &data_file),
+            "unexpected error: {error:?}"
+        );
+        let rendered = error.to_string();
+        assert!(rendered.contains("Failed to open data file for reading"));
+        assert!(rendered.contains("No such file or directory"));
+    }
+
+    #[test]
+    fn malformed_csv_maps_to_deserialize_csv() {
+        let dir = temp_dir("malformed");
+        let data_file = dir.join("data.csv");
+        fs::write(&data_file, "2026-11-25|not-a-number\n").expect("Failed to write test data");
+
+        let error = read_records_from_file::<TimeRecord>(&data_file).unwrap_err();
+
+        assert!(
+            matches!(error.current_context(), StorageError::DeserializeCsv { path } if path == &data_file),
+            "unexpected error: {error:?}"
+        );
+        let rendered = error.to_string();
+        assert!(rendered.contains("Failed to deserialize records from CSV"));
+        assert!(rendered.contains("invalid digit found in string"));
+    }
+}
