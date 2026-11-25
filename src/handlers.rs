@@ -77,7 +77,7 @@ fn report_total_hours(data: &[TimeRecord]) {
     println!("total hours: {}", format_duration(total_duration));
 }
 
-fn report_by_project(data: &Vec<TimeRecord>) {
+fn report_by_project(data: &[TimeRecord]) {
     // Use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
     let mut duration_by_project: BTreeMap<String, Duration> = BTreeMap::new();
 
@@ -148,7 +148,7 @@ pub fn handle_pause(current_task_file_path: PathBuf) {
     // TODO: cleanup this path hack code and try to write directly to file
     let tmp_file = format!(
         "{}.tmp",
-        &current_task_file_path
+        current_task_file_path
             .file_name()
             .expect("The task file should be a file")
             .to_str()

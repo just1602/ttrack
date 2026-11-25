@@ -20,10 +20,6 @@ where
     Ok(csv_reader.deserialize().map(|f| f.unwrap()).collect())
 }
 
-/**
-* TODO: Extract csv_writer creation in a function
-**/
-
 pub fn write_record_to_file<R>(file_path: &Path, record: R) -> Result<(), std::io::Error>
 where
     R: Serialize,
@@ -33,6 +29,7 @@ where
         .append(true)
         .open(file_path)?;
 
+    // TODO: Extract csv_writer creation in a function
     let mut csv_writer = WriterBuilder::new()
         .delimiter(b'|')
         .has_headers(false)
@@ -54,6 +51,7 @@ where
         .append(true)
         .open(file_path)?;
 
+    // TODO: Extract csv_writer creation in a function
     let mut csv_writer = WriterBuilder::new()
         .delimiter(b'|')
         .has_headers(false)
