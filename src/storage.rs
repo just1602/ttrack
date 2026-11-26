@@ -1,5 +1,6 @@
 use std::{
     fs::{File, OpenOptions},
+    io,
     path::{Path, PathBuf},
 };
 
@@ -69,43 +70,18 @@ where
             path: file_path.to_path_buf(),
         })?;
 
-    // TODO: Extract csv_writer creation in a function
-    let mut csv_writer = WriterBuilder::new()
-        .delimiter(b'|')
-        .has_headers(false)
-        .from_writer(file);
-
-    csv_writer
-        .serialize(record)
-        .context(StorageError::SerializeCsv {
-            path: file_path.to_path_buf(),
-        })?;
-
-    csv_writer.flush().context(StorageError::FlushCsv {
-        path: file_path.to_path_buf(),
-    })?;
-
-    Ok(())
+    write_all_records_to(file, &[record], file_path)
 }
 
-pub fn write_records_to_file<R>(file_path: &Path, records: &Vec<R>) -> StorageResult<()>
+fn write_all_records_to<R, W>(writer: W, records: &[R], file_path: &Path) -> StorageResult<()>
 where
     R: Serialize,
+    W: io::Write,
 {
-    let file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(file_path)
-        .context(StorageError::OpenForWrite {
-            path: file_path.to_path_buf(),
-        })?;
-
-    // TODO: Extract csv_writer creation in a function
     let mut csv_writer = WriterBuilder::new()
         .delimiter(b'|')
         .has_headers(false)
-        .from_writer(file);
+        .from_writer(writer);
 
     for record in records {
         csv_writer
@@ -122,6 +98,37 @@ where
     Ok(())
 }
 
+pub fn write_records_to_file<R>(file_path: &Path, records: &[R]) -> StorageResult<()>
+where
+    R: Serialize,
+{
+    let file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(file_path)
+        .context(StorageError::OpenForWrite {
+            path: file_path.to_path_buf(),
+        })?;
+
+    write_all_records_to(file, records, file_path)
+}
+
+pub fn append_records_to_file<R>(file_path: &Path, records: &[R]) -> StorageResult<()>
+where
+    R: Serialize,
+{
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file_path)
+        .context(StorageError::OpenForWrite {
+            path: file_path.to_path_buf(),
+        })?;
+
+    write_all_records_to(file, records, file_path)
+}
+
 fn temp_path_for(file_path: &Path) -> StorageResult<PathBuf> {
     let Some(file_name) = file_path.file_name() else {
         return Err(rootcause::report!(StorageError::MissingFileName {
@@ -134,7 +141,7 @@ fn temp_path_for(file_path: &Path) -> StorageResult<PathBuf> {
     Ok(file_path.with_file_name(temp_file_name))
 }
 
-pub fn replace_file_with_records<R>(file_path: &Path, records: &Vec<R>) -> StorageResult<()>
+pub fn replace_file_with_records<R>(file_path: &Path, records: &[R]) -> StorageResult<()>
 where
     R: Serialize,
 {
@@ -160,8 +167,8 @@ mod tests {
     use crate::records::TimeRecord;
 
     use super::{
-        StorageError, read_records_from_file, replace_file_with_records, write_record_to_file,
-        write_records_to_file,
+        StorageError, append_records_to_file, read_records_from_file, replace_file_with_records,
+        write_record_to_file, write_records_to_file,
     };
 
     fn record(description: &str) -> TimeRecord {
@@ -212,7 +219,7 @@ mod tests {
         let data_file = temp_dir.path().join("data.csv");
 
         write_record_to_file(&data_file, record("stale")).expect("Failed to write stale record");
-        write_records_to_file(&data_file, &vec![record("fresh")]).expect("Failed to write records");
+        write_records_to_file(&data_file, &[record("fresh")]).expect("Failed to write records");
 
         let records =
             read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
@@ -230,7 +237,7 @@ mod tests {
             .expect("Failed to write stale temp record");
         assert!(temp_file.exists());
 
-        replace_file_with_records(&data_file, &vec![record("fresh")])
+        replace_file_with_records(&data_file, &[record("fresh")])
             .expect("Failed to replace file with records");
 
         let records =
@@ -244,8 +251,25 @@ mod tests {
     }
 
     #[test]
+    fn append_records_to_file_preserves_existing_records() {
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir.path().join("data.csv");
+
+        write_record_to_file(&data_file, record("existing")).expect("Failed to write record");
+        append_records_to_file(&data_file, &[record("first"), record("second")])
+            .expect("Failed to append records");
+
+        let records =
+            read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
+        assert_eq!(records.len(), 3);
+        assert_eq!(records[0].description, "existing");
+        assert_eq!(records[1].description, "first");
+        assert_eq!(records[2].description, "second");
+    }
+
+    #[test]
     fn replace_file_with_records_rejects_path_without_file_name() {
-        let error = replace_file_with_records(Path::new(""), &vec![record("fresh")]).unwrap_err();
+        let error = replace_file_with_records(Path::new(""), &[record("fresh")]).unwrap_err();
 
         assert!(
             matches!(
@@ -266,7 +290,7 @@ mod tests {
             .path()
             .join(std::ffi::OsString::from_vec(b"data-\xff.csv".to_vec()));
 
-        replace_file_with_records(&data_file, &vec![record("fresh")])
+        replace_file_with_records(&data_file, &[record("fresh")])
             .expect("Failed to replace file with records");
 
         let records =

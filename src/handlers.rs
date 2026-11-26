@@ -1,10 +1,13 @@
 use std::{collections::BTreeMap, fs::File, path::PathBuf, time::Duration};
 
-use rootcause::{bail, prelude::ResultExt};
+use rootcause::{bail, option_ext::OptionExt, prelude::ResultExt};
 
 use crate::{
     cli::ReportCommand,
-    storage::{read_records_from_file, replace_file_with_records, write_record_to_file},
+    storage::{
+        append_records_to_file, read_records_from_file, replace_file_with_records,
+        write_record_to_file,
+    },
 };
 use crate::{
     cli::TrackCommand,
@@ -174,6 +177,43 @@ pub fn handle_resume(current_task_file_path: PathBuf) -> rootcause::Result<()> {
     Ok(())
 }
 
+fn time_records_for_segments(records: &[CurrentTaskRecord]) -> rootcause::Result<Vec<TimeRecord>> {
+    let mut time_records = Vec::new();
+
+    for record in records {
+        let Some(end_at) = record.end_at else {
+            bail!("Current task record is missing an end time");
+        };
+
+        let mut chunk_start = record.created_at;
+        while chunk_start < end_at {
+            let next_midnight = chunk_start
+                .date()
+                .succ_opt()
+                .context("Failed to compute next calendar day")?
+                .and_hms_opt(0, 0, 0)
+                .context("Failed to compute midnight")?;
+            let chunk_end = end_at.min(next_midnight);
+
+            let duration = chunk_end
+                .signed_duration_since(chunk_start)
+                .to_std()
+                .context("Failed to compute task duration")?;
+
+            time_records.push(TimeRecord {
+                created_at: chunk_start.date(),
+                duration,
+                description: record.description.clone(),
+                project: record.project.clone(),
+            });
+
+            chunk_start = chunk_end;
+        }
+    }
+
+    Ok(time_records)
+}
+
 pub fn handle_stop(
     current_task_file_path: PathBuf,
     time_record_file_path: PathBuf,
@@ -192,32 +232,10 @@ pub fn handle_stop(
 
     rec.end_at = Some(Local::now().naive_local());
 
-    let mut total = Duration::default();
-    for record in &records {
-        let Some(end_at) = record.end_at else {
-            bail!("Current task record is missing an end time");
-        };
+    let time_records = time_records_for_segments(&records)?;
 
-        total += end_at
-            .signed_duration_since(record.created_at)
-            .to_std()
-            .context("Failed to compute task duration")?;
-    }
-
-    // we need a record to get the description and the project
-    let Some(rec) = records.last() else {
-        bail!("Failed to retrieve current task information");
-    };
-
-    let tr = TimeRecord {
-        created_at: Local::now().date_naive(),
-        duration: total,
-        description: rec.description.clone(),
-        project: rec.project.clone(),
-    };
-
-    write_record_to_file(&time_record_file_path, tr)
-        .context("Failed to write new time record from the current task to file")
+    append_records_to_file(&time_record_file_path, &time_records)
+        .context("Failed to write time records from the current task to file")
         .attach_with(|| format!("path: {}", time_record_file_path.display()))?;
 
     File::create(&current_task_file_path)

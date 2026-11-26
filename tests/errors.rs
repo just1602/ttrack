@@ -170,6 +170,10 @@ fn valid_start_pause_resume_stop_sequence_succeeds() {
 
     let records = fs::read_to_string(temp_dir.path().join("data.csv"))
         .expect("Failed to read time record file");
-    assert_eq!(records.lines().count(), 1);
-    assert!(records.contains("A4 task"));
+    assert_eq!(
+        records.lines().count(),
+        2,
+        "expected one record per pause/resume segment"
+    );
+    assert!(records.lines().all(|line| line.contains("A4 task")));
 }
