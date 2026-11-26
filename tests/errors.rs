@@ -177,3 +177,79 @@ fn valid_start_pause_resume_stop_sequence_succeeds() {
     );
     assert!(records.lines().all(|line| line.contains("A4 task")));
 }
+
+#[test]
+fn non_state_commands_do_not_create_state_directory() {
+    let temp_dir = tempdir().expect("Failed to create test temp dir");
+    let state_dir = state_home(temp_dir.path()).join("ttrack");
+
+    run_ok(temp_dir.path(), &["track", "-t", "1m", "-d", "C2 task"]);
+    assert!(!state_dir.exists(), "track created the state directory");
+
+    run_ok(temp_dir.path(), &["report"]);
+    assert!(!state_dir.exists(), "report created the state directory");
+
+    run_ok(temp_dir.path(), &["start", "-d", "C2 task"]);
+    assert!(
+        state_dir.exists(),
+        "start did not create the state directory"
+    );
+}
+
+#[test]
+fn home_fallback_creates_state_directory() {
+    let temp_dir = tempdir().expect("Failed to create test temp dir");
+    let home = temp_dir.path().join("home");
+    fs::create_dir_all(&home).expect("Failed to create test home dir");
+    let data_file = temp_dir.path().join("data.csv");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_ttrack"))
+        .args(["-f", data_file.to_str().unwrap(), "start", "-d", "C2 task"])
+        .env_remove("XDG_STATE_HOME")
+        .env("HOME", &home)
+        .output()
+        .expect("Failed to run ttrack");
+
+    assert!(
+        output.status.success(),
+        "ttrack start failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let state_dir = home.join(".local").join("state").join("ttrack");
+    assert!(
+        state_dir.exists(),
+        "HOME fallback did not create the state directory"
+    );
+    assert!(
+        state_dir.join("data.csv").exists(),
+        "HOME fallback did not create the state file"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn non_utf8_state_home_is_supported() {
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+
+    let temp_dir = tempdir().expect("Failed to create test temp dir");
+    let mut state_home_bytes = temp_dir.path().as_os_str().as_bytes().to_vec();
+    state_home_bytes.extend_from_slice(b"/state-\xff");
+    let state_home = std::ffi::OsString::from_vec(state_home_bytes);
+
+    let data_file = temp_dir.path().join("data.csv");
+    let output = Command::new(env!("CARGO_BIN_EXE_ttrack"))
+        .args(["-f", data_file.to_str().unwrap(), "start", "-d", "C2 task"])
+        .env("XDG_STATE_HOME", &state_home)
+        .output()
+        .expect("Failed to run ttrack");
+
+    assert!(
+        output.status.success(),
+        "ttrack start failed:\n{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let state_file = PathBuf::from(&state_home).join("ttrack").join("data.csv");
+    assert!(state_file.exists(), "non-UTF-8 state path was not used");
+}
