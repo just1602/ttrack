@@ -172,6 +172,7 @@ mod tests {
     use std::{fs, path::Path, time::Duration};
 
     use chrono::NaiveDate;
+    use proptest::prelude::*;
     use tempfile::tempdir;
 
     use crate::records::TimeRecord;
@@ -180,6 +181,41 @@ mod tests {
         StorageError, append_records_to_file, read_records_from_file, replace_file_with_records,
         write_record_to_file, write_records_to_file,
     };
+
+    const GOLDEN_RECORDS_CSV: &str = include_str!("../tests/fixtures/records.csv");
+
+    fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(year, month, day).unwrap()
+    }
+
+    fn text_strategy() -> impl Strategy<Value = String> {
+        prop::string::string_regex("[A-Za-z0-9 _-]{0,32}").expect("valid text strategy regex")
+    }
+
+    fn nonempty_text_strategy() -> impl Strategy<Value = String> {
+        prop::string::string_regex("[A-Za-z0-9 _-]{1,32}")
+            .expect("valid non-empty text strategy regex")
+    }
+
+    fn time_record_strategy() -> impl Strategy<Value = TimeRecord> {
+        (
+            2020i32..=2030,
+            1u32..=12,
+            1u32..=28,
+            0u64..=86_400,
+            0u32..1_000_000_000,
+            text_strategy(),
+            prop::option::of(nonempty_text_strategy()),
+        )
+            .prop_map(
+                |(year, month, day, secs, nanos, description, project)| TimeRecord {
+                    created_at: date(year, month, day),
+                    duration: Duration::new(secs, nanos),
+                    description,
+                    project,
+                },
+            )
+    }
 
     fn record(description: &str) -> TimeRecord {
         TimeRecord {
@@ -307,5 +343,71 @@ mod tests {
             read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].description, "fresh");
+    }
+
+    #[test]
+    fn golden_csv_round_trips_exactly() {
+        let temp_dir = tempdir().expect("Failed to create test temp dir");
+        let data_file = temp_dir.path().join("data.csv");
+        fs::write(&data_file, GOLDEN_RECORDS_CSV).expect("Failed to write golden fixture");
+
+        let records = read_records_from_file::<TimeRecord>(&data_file)
+            .expect("Failed to read golden fixture");
+        assert_eq!(
+            records,
+            vec![
+                TimeRecord {
+                    created_at: date(2026, 11, 25),
+                    duration: Duration::from_secs(5400),
+                    description: "golden task".to_string(),
+                    project: Some("demo".to_string()),
+                },
+                TimeRecord {
+                    created_at: date(2026, 11, 24),
+                    duration: Duration::from_secs(1800),
+                    description: "no project".to_string(),
+                    project: None,
+                },
+                TimeRecord {
+                    created_at: date(2026, 11, 26),
+                    duration: Duration::new(1, 500_000_000),
+                    description: "fractional a".to_string(),
+                    project: Some("demo".to_string()),
+                },
+                TimeRecord {
+                    created_at: date(2026, 11, 26),
+                    duration: Duration::new(1, 500_000_000),
+                    description: "fractional b".to_string(),
+                    project: None,
+                },
+            ]
+        );
+
+        write_records_to_file(&data_file, &records).expect("Failed to rewrite golden fixture");
+        assert_eq!(
+            fs::read_to_string(&data_file).expect("Failed to read rewritten fixture"),
+            GOLDEN_RECORDS_CSV
+        );
+    }
+
+    proptest! {
+        #[test]
+        fn arbitrary_records_survive_write_read_round_trip(
+            records in prop::collection::vec(time_record_strategy(), 0..8)
+        ) {
+            let temp_dir = tempdir().expect("Failed to create test temp dir");
+            let data_file = temp_dir.path().join("data.csv");
+
+            write_records_to_file(&data_file, &records).expect("Failed to write records");
+            let encoded = fs::read(&data_file).expect("Failed to read encoded records");
+
+            let decoded =
+                read_records_from_file::<TimeRecord>(&data_file).expect("Failed to read records");
+            write_records_to_file(&data_file, &decoded).expect("Failed to rewrite records");
+            let reencoded = fs::read(&data_file).expect("Failed to read reencoded records");
+
+            prop_assert_eq!(reencoded, encoded);
+            prop_assert_eq!(decoded, records);
+        }
     }
 }
