@@ -248,7 +248,7 @@ pub enum Command {
 }
 
 #[derive(Parser)]
-#[command(version, about = "A simple, but yet powerfull time tracker", long_about = None)]
+#[command(version, about = "A simple, but yet powerful time tracker", long_about = None)]
 pub struct Cli {
     #[arg(
         short,
@@ -348,7 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn ttrack_clap_duration_parser_parse_mised_hours_and_minutes_correctly() {
+    fn ttrack_clap_duration_parser_parse_mixed_hours_and_minutes_correctly() {
         let result = ttrack_clap_duration_parser("1h30m");
 
         assert!(result.is_ok());
