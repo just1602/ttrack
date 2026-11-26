@@ -1,4 +1,5 @@
 mod cli;
+mod completion;
 mod handlers;
 mod records;
 mod storage;
@@ -48,7 +49,12 @@ fn current_task_file_for(file: &Path) -> rootcause::Result<PathBuf> {
 }
 
 fn main() -> Result<(), MainReport> {
-    let Cli { file, command } = Cli::parse();
+    let args: Vec<_> = std::env::args_os().collect();
+    if completion::try_run_from(&args) {
+        return Ok(());
+    }
+
+    let Cli { file, command } = Cli::parse_from(args);
 
     match command {
         Command::Track(cmd) => handlers::handle_track(cmd, file)?,

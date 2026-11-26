@@ -253,3 +253,41 @@ fn non_utf8_state_home_is_supported() {
     let state_file = PathBuf::from(&state_home).join("ttrack").join("data.csv");
     assert!(state_file.exists(), "non-UTF-8 state path was not used");
 }
+
+#[test]
+fn completion_command_generates_scripts_without_file_or_state_dir() {
+    let temp_dir = tempdir().expect("Failed to create test temp dir");
+    let state_dir = state_home(temp_dir.path()).join("ttrack");
+
+    for (shell, marker) in [
+        ("bash", "_ttrack"),
+        ("zsh", "#compdef ttrack"),
+        ("fish", "complete -c ttrack"),
+    ] {
+        let output = run_ttrack(&["completion", shell], &state_home(temp_dir.path()));
+        assert!(
+            output.status.success(),
+            "ttrack completion {shell} failed:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+
+        let stdout = String::from_utf8(output.stdout).expect("completion output was not UTF-8");
+        assert!(
+            stdout.contains(marker),
+            "unexpected {shell} completion output:\n{stdout}"
+        );
+    }
+
+    assert!(
+        !state_dir.exists(),
+        "completion created the state directory"
+    );
+}
+
+#[test]
+fn completion_command_rejects_unknown_shell() {
+    let temp_dir = tempdir().expect("Failed to create test temp dir");
+    let output = run_ttrack(&["completion", "nope"], &state_home(temp_dir.path()));
+
+    assert_clean_error(&output, "invalid value");
+}
