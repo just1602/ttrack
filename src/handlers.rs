@@ -147,11 +147,11 @@ pub fn handle_pause(current_task_file_path: PathBuf) -> rootcause::Result<()> {
 }
 
 pub fn handle_resume(current_task_file_path: PathBuf) -> rootcause::Result<()> {
-    let records: Vec<CurrentTaskRecord> = read_records_from_file(&current_task_file_path)
+    let mut records: Vec<CurrentTaskRecord> = read_records_from_file(&current_task_file_path)
         .context("Failed to read current task records")
         .attach_with(|| format!("path: {}", current_task_file_path.display()))?;
 
-    let Some(last_record) = records.last() else {
+    let Some(last_record) = records.pop() else {
         bail!("There is no current task to resume");
     };
 
@@ -159,7 +159,7 @@ pub fn handle_resume(current_task_file_path: PathBuf) -> rootcause::Result<()> {
         bail!("Current task is already running");
     }
 
-    let resume_record = CurrentTaskRecord::resume_from(last_record.clone());
+    let resume_record = CurrentTaskRecord::resume_from(last_record);
 
     write_record_to_file(&current_task_file_path, resume_record)
         .context("Failed to write resumed current task data")

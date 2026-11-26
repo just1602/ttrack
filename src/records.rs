@@ -10,7 +10,7 @@ pub struct TimeRecord {
     pub project: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CurrentTaskRecord {
     pub created_at: NaiveDateTime,
     pub end_at: Option<NaiveDateTime>,
