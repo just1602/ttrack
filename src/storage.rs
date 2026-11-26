@@ -4,10 +4,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use csv::{ReaderBuilder, WriterBuilder};
+use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
 use rootcause::prelude::ResultExt;
 use serde::{Serialize, de::DeserializeOwned};
 use thiserror::Error;
+
+const CSV_DELIMITER: u8 = b'|';
 
 #[derive(Debug, Error)]
 pub enum StorageError {
@@ -35,6 +37,20 @@ pub enum StorageError {
 
 pub type StorageResult<T> = rootcause::Result<T, StorageError>;
 
+fn csv_reader<R: io::Read>(reader: R) -> Reader<R> {
+    ReaderBuilder::new()
+        .delimiter(CSV_DELIMITER)
+        .has_headers(false)
+        .from_reader(reader)
+}
+
+fn csv_writer<W: io::Write>(writer: W) -> Writer<W> {
+    WriterBuilder::new()
+        .delimiter(CSV_DELIMITER)
+        .has_headers(false)
+        .from_writer(writer)
+}
+
 pub fn read_records_from_file<R>(file_path: &Path) -> StorageResult<Vec<R>>
 where
     R: DeserializeOwned,
@@ -43,10 +59,7 @@ where
         path: file_path.to_path_buf(),
     })?;
 
-    let mut csv_reader = ReaderBuilder::new()
-        .delimiter(b'|')
-        .has_headers(false)
-        .from_reader(file);
+    let mut csv_reader = csv_reader(file);
 
     let records = csv_reader
         .deserialize()
@@ -78,10 +91,7 @@ where
     R: Serialize,
     W: io::Write,
 {
-    let mut csv_writer = WriterBuilder::new()
-        .delimiter(b'|')
-        .has_headers(false)
-        .from_writer(writer);
+    let mut csv_writer = csv_writer(writer);
 
     for record in records {
         csv_writer
