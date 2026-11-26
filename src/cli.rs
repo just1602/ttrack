@@ -3,40 +3,122 @@ use std::{path::PathBuf, time::Duration};
 use chrono::{Days, Local, NaiveDate};
 use clap::{ArgGroup, Parser, Subcommand};
 
-fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
+fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, String> {
     match date {
         "today" => Ok(Local::now().date_naive()),
-        "yesterday" => Ok(Local::now()
+        "yesterday" => Local::now()
             .date_naive()
             .checked_sub_days(Days::new(1))
-            .unwrap()),
-        _ => Ok(date.parse::<NaiveDate>().unwrap()),
+            .ok_or_else(|| "Failed to compute yesterday's date".to_string()),
+        _ => date
+            .parse::<NaiveDate>()
+            .map_err(|error| format!("Invalid date '{date}': {error}")),
     }
 }
 
-fn ttrack_clap_duration_parser(duration: &str) -> Result<Duration, std::io::Error> {
-    if let Ok(numeric_duration) = duration.parse::<u64>() {
-        return Ok(Duration::from_secs(numeric_duration));
-    }
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+enum TimeUnit {
+    Hours,
+    Minutes,
+    Seconds,
+}
 
-    let mut secs = 0;
-    let mut start_idx = 0;
-    for (idx, c) in duration.char_indices() {
-        // FIXME: allow to put 2h30 instead of having to put the m everywhere (2h30m)
-        match c {
-            'h' => {
-                secs += duration[start_idx..idx].parse::<u64>().unwrap() * 3600;
-                start_idx = idx + 1;
-            }
-            'm' => {
-                secs += duration[start_idx..idx].parse::<u64>().unwrap() * 60;
-                start_idx = idx + 1;
-            }
-            _ => continue,
+impl TimeUnit {
+    fn from_byte(byte: u8) -> Option<Self> {
+        match byte {
+            b'h' => Some(Self::Hours),
+            b'm' => Some(Self::Minutes),
+            b's' => Some(Self::Seconds),
+            _ => None,
         }
     }
 
-    Ok(Duration::from_secs(secs))
+    fn multiplier(self) -> u64 {
+        match self {
+            Self::Hours => 3600,
+            Self::Minutes => 60,
+            Self::Seconds => 1,
+        }
+    }
+
+    fn next_smaller(self) -> Option<Self> {
+        match self {
+            Self::Hours => Some(Self::Minutes),
+            Self::Minutes => Some(Self::Seconds),
+            Self::Seconds => None,
+        }
+    }
+}
+
+fn add_duration_unit(total: u64, value: u64, time_unit: TimeUnit) -> Result<u64, String> {
+    let part = value
+        .checked_mul(time_unit.multiplier())
+        .ok_or_else(|| "Duration is too large".to_string())?;
+    total
+        .checked_add(part)
+        .ok_or_else(|| "Duration is too large".to_string())
+}
+
+fn ttrack_clap_duration_parser(duration: &str) -> Result<Duration, String> {
+    if duration.is_empty() {
+        return Err("Duration cannot be empty".to_string());
+    }
+
+    let bytes = duration.as_bytes();
+    let mut index = 0;
+    let mut total = 0u64;
+    let mut last_time_unit: Option<TimeUnit> = None;
+
+    while index < bytes.len() {
+        let digits_start = index;
+        while index < bytes.len() && bytes[index].is_ascii_digit() {
+            index += 1;
+        }
+
+        if index == digits_start {
+            return Err(format!(
+                "Invalid duration '{duration}': expected digits at position {index}"
+            ));
+        }
+
+        let digits = &duration[digits_start..index];
+        let value = digits
+            .parse::<u64>()
+            .map_err(|_| format!("Invalid duration '{duration}': {digits:?} is too large"))?;
+
+        if index == bytes.len() {
+            let time_unit = match last_time_unit {
+                None => TimeUnit::Seconds,
+                Some(unit) => unit.next_smaller().ok_or_else(|| {
+                    format!("Invalid duration '{duration}': no unit smaller than seconds")
+                })?,
+            };
+            total = add_duration_unit(total, value, time_unit)?;
+            break;
+        }
+
+        let Some(time_unit) = TimeUnit::from_byte(bytes[index]) else {
+            let character = bytes[index] as char;
+            return Err(format!(
+                "Invalid duration '{duration}': unexpected character '{character}'"
+            ));
+        };
+        index += 1;
+
+        // Units must be strictly descending: hours, then minutes, then seconds.
+        if let Some(last_time_unit) = last_time_unit
+            && time_unit <= last_time_unit
+        {
+            return Err(format!(
+                "Invalid duration '{duration}': units must be in descending order"
+            ));
+        }
+
+        total = add_duration_unit(total, value, time_unit)?;
+        last_time_unit = Some(time_unit);
+    }
+
+    Ok(Duration::from_secs(total))
 }
 
 #[derive(Parser)]
@@ -53,7 +135,7 @@ pub struct TrackCommand {
     #[arg(
         short,
         long,
-        help = "The time duration of the record",
+        help = "The time duration of the record (e.g. 3600, 2h, 1h30m, 1h30)",
         value_parser = clap::builder::ValueParser::new(ttrack_clap_duration_parser),
         required = true
     )]
