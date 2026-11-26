@@ -1,8 +1,7 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use chrono::{Days, Local, NaiveDate};
 use clap::{ArgGroup, Parser, Subcommand};
-use std::time::Duration;
 
 fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
     match date {
