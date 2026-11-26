@@ -276,6 +276,12 @@ mod tests {
         Cli::try_parse_from(full_args)
     }
 
+    fn parse_track(args: &[&str]) -> Result<Cli, clap::Error> {
+        let mut full_args = vec!["ttrack", "-f", "data.csv", "track", "-d", "task"];
+        full_args.extend_from_slice(args);
+        Cli::try_parse_from(full_args)
+    }
+
     fn assert_conflict(args: &[&str]) {
         let error = match parse_report(args) {
             Ok(_) => panic!("conflicting report flags were accepted: {args:?}"),
@@ -347,6 +353,97 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Duration::from_secs(5400));
+    }
+
+    #[test]
+    fn duration_parser_accepts_shorthand_units() {
+        for (input, expected) in [
+            ("1h30", Duration::from_secs(5400)),
+            ("3m20", Duration::from_secs(200)),
+            ("1h30m20", Duration::from_secs(5420)),
+            ("1h30s", Duration::from_secs(3630)),
+            ("90s", Duration::from_secs(90)),
+        ] {
+            assert_eq!(
+                ttrack_clap_duration_parser(input).unwrap(),
+                expected,
+                "input: {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn duration_parser_rejects_malformed_input() {
+        for input in [
+            "", "h30m", "1hm", "m30", "1h2h", "30m1h", "1x30m", "1h30m5x", "1h30s5", "-1h",
+            "1h 30m",
+        ] {
+            assert!(
+                ttrack_clap_duration_parser(input).is_err(),
+                "accepted {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn duration_parser_rejects_overflow() {
+        let max = u64::MAX.to_string();
+        let too_large_seconds = (u64::MAX as u128 + 1).to_string();
+        let max_hours = format!("{max}h");
+        let max_minutes = format!("{max}m");
+
+        for input in [
+            too_large_seconds.as_str(),
+            max_hours.as_str(),
+            max_minutes.as_str(),
+        ] {
+            assert!(
+                ttrack_clap_duration_parser(input).is_err(),
+                "accepted overflowing duration {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn date_parser_rejects_invalid_input() {
+        for input in ["", "not-a-date", "2024-02-30", "2024-13-01"] {
+            assert!(
+                ttrack_clap_date_parser(input).is_err(),
+                "accepted {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn track_accepts_shorthand_duration() {
+        assert!(parse_track(&["-t", "1h30"]).is_ok());
+    }
+
+    #[test]
+    fn track_rejects_invalid_duration_value() {
+        let error = match parse_track(&["-t", "h30m"]) {
+            Ok(_) => panic!("invalid duration was accepted"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.kind(), ErrorKind::ValueValidation);
+    }
+
+    #[test]
+    fn report_rejects_invalid_date_value() {
+        let error = match Cli::try_parse_from([
+            "ttrack",
+            "-f",
+            "data.csv",
+            "report",
+            "--date",
+            "not-a-date",
+        ]) {
+            Ok(_) => panic!("invalid date was accepted"),
+            Err(error) => error,
+        };
+
+        assert_eq!(error.kind(), ErrorKind::ValueValidation);
     }
 
     #[test]
