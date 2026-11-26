@@ -20,7 +20,11 @@ rustPlatform.buildRustPackage {
   nativeBuildInputs = [ installShellFiles ];
 
   postInstall = ''
-    installShellCompletion --bash "dist/ttrack.bash" --zsh "dist/_ttrack" --fish "dist/ttrack.fish"
+    mkdir -p completions
+    $out/bin/ttrack completion bash > completions/ttrack.bash
+    $out/bin/ttrack completion zsh > completions/_ttrack
+    $out/bin/ttrack completion fish > completions/ttrack.fish
+    installShellCompletion --bash completions/ttrack.bash --zsh completions/_ttrack --fish completions/ttrack.fish
   '';
 
   meta = {
