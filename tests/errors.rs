@@ -176,6 +176,11 @@ fn valid_start_pause_resume_stop_sequence_succeeds() {
         "expected one record per pause/resume segment"
     );
     assert!(records.lines().all(|line| line.contains("A4 task")));
+    assert_eq!(
+        fs::read_to_string(state_file(temp_dir.path())).expect("Failed to read state file"),
+        "",
+        "stop did not clear current task state"
+    );
 }
 
 #[test]
