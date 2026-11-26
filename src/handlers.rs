@@ -19,53 +19,77 @@ use crate::{
     cli::TrackCommand,
     records::{CurrentTaskRecord, TimeRecord},
 };
-use chrono::{Days, Local};
+use chrono::{Days, Local, NaiveDate};
 
-pub fn handle_report(cmd: ReportCommand, filename: PathBuf) -> rootcause::Result<()> {
-    let mut data: Vec<TimeRecord> = read_records_from_file(&filename)
-        .context("Failed to load records for report")
-        .attach_with(|| format!("path: {}", filename.display()))?;
+#[derive(Clone, Copy, Debug, Default)]
+struct DateBounds {
+    lower: Option<NaiveDate>,
+    upper: Option<NaiveDate>,
+}
+
+fn constrain_bounds(bounds: &mut DateBounds, min: NaiveDate, max: NaiveDate) {
+    bounds.lower = Some(bounds.lower.map_or(min, |current| current.max(min)));
+    bounds.upper = Some(bounds.upper.map_or(max, |current| current.min(max)));
+}
+
+fn report_bounds(cmd: &ReportCommand, now: NaiveDate) -> rootcause::Result<DateBounds> {
+    let mut bounds = DateBounds::default();
 
     if cmd.today {
-        let today = Local::now().date_naive();
-
-        data.retain(|tr| tr.created_at == today);
+        constrain_bounds(&mut bounds, now, now);
     }
 
     if cmd.yesterday {
-        let Some(yesterday) = Local::now().date_naive().checked_sub_days(Days::new(1)) else {
-            bail!("Failed to compute yesterday's date");
-        };
-
-        data.retain(|tr| tr.created_at == yesterday)
+        let yesterday = now
+            .checked_sub_days(Days::new(1))
+            .context("Failed to compute yesterday's date")?;
+        constrain_bounds(&mut bounds, yesterday, yesterday);
     }
 
     if cmd.this_week {
-        let week = Local::now().date_naive().week(chrono::Weekday::Mon);
-
-        data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
+        let week = now.week(chrono::Weekday::Mon);
+        constrain_bounds(&mut bounds, week.first_day(), week.last_day());
     }
 
     if cmd.last_week {
-        let Some(last_week_day) = Local::now().date_naive().checked_sub_days(Days::new(7)) else {
-            bail!("Failed to compute last week's date");
-        };
+        let last_week_day = now
+            .checked_sub_days(Days::new(7))
+            .context("Failed to compute last week's date")?;
         let week = last_week_day.week(chrono::Weekday::Mon);
-
-        data.retain(|tr| tr.created_at >= week.first_day() && tr.created_at <= week.last_day())
+        constrain_bounds(&mut bounds, week.first_day(), week.last_day());
     }
 
     if let Some(date) = cmd.date {
-        data.retain(|tr| tr.created_at == date);
+        constrain_bounds(&mut bounds, date, date);
     }
 
     if let Some(since) = cmd.since {
-        data.retain(|tr| tr.created_at >= since)
+        bounds.lower = Some(bounds.lower.map_or(since, |current| current.max(since)));
     }
 
     if let Some(until) = cmd.until {
-        data.retain(|tr| tr.created_at <= until)
-    };
+        bounds.upper = Some(bounds.upper.map_or(until, |current| current.min(until)));
+    }
+
+    Ok(bounds)
+}
+
+fn filter_records(data: Vec<TimeRecord>, bounds: DateBounds) -> Vec<TimeRecord> {
+    data.into_iter()
+        .filter(|tr| {
+            bounds.lower.is_none_or(|lower| tr.created_at >= lower)
+                && bounds.upper.is_none_or(|upper| tr.created_at <= upper)
+        })
+        .collect()
+}
+
+pub fn handle_report(cmd: ReportCommand, filename: PathBuf) -> rootcause::Result<()> {
+    let data: Vec<TimeRecord> = read_records_from_file(&filename)
+        .context("Failed to load records for report")
+        .attach_with(|| format!("path: {}", filename.display()))?;
+
+    let bounds = report_bounds(&cmd, Local::now().date_naive())?;
+    let data = filter_records(data, bounds);
 
     if cmd.by_project {
         report_by_project(&data);
@@ -82,9 +106,9 @@ fn report_total_hours(data: &[TimeRecord]) {
     println!("total hours: {}", FormattedDuration(total_duration));
 }
 
-fn report_by_project(data: &[TimeRecord]) {
-    // Use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
-    let mut duration_by_project: BTreeMap<&str, Duration> = BTreeMap::new();
+// Use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
+fn durations_by_project(data: &[TimeRecord]) -> BTreeMap<&str, Duration> {
+    let mut duration_by_project = BTreeMap::new();
 
     for tr in data {
         let project = tr.project.as_deref().unwrap_or("other");
@@ -92,8 +116,12 @@ fn report_by_project(data: &[TimeRecord]) {
     }
 
     duration_by_project
+}
+
+fn report_by_project(data: &[TimeRecord]) {
+    durations_by_project(data)
         .into_iter()
-        .for_each(|(k, v)| println!("{}: {}", k, FormattedDuration(v)));
+        .for_each(|(project, duration)| println!("{project}: {}", FormattedDuration(duration)));
     println!("---")
 }
 
@@ -300,13 +328,47 @@ impl Display for FormattedDuration {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{collections::BTreeSet, time::Duration};
 
     use chrono::{NaiveDate, NaiveDateTime};
+    use proptest::prelude::*;
 
-    use crate::records::CurrentTaskRecord;
+    use crate::records::{CurrentTaskRecord, TimeRecord};
 
-    use super::{FormattedDuration, TimeRecord, time_records_for_segments};
+    use super::{
+        DateBounds, FormattedDuration, durations_by_project, filter_records,
+        time_records_for_segments,
+    };
+
+    fn date_strategy() -> impl Strategy<Value = NaiveDate> {
+        (2020i32..=2030, 1u32..=12, 1u32..=28)
+            .prop_map(|(year, month, day)| NaiveDate::from_ymd_opt(year, month, day).unwrap())
+    }
+
+    fn text_strategy() -> impl Strategy<Value = String> {
+        prop::string::string_regex("[A-Za-z0-9 _-]{0,16}").expect("valid text strategy regex")
+    }
+
+    fn time_record_strategy() -> impl Strategy<Value = TimeRecord> {
+        (
+            date_strategy(),
+            0u64..=86_400,
+            0u32..1_000_000_000,
+            text_strategy(),
+            prop::option::of(
+                prop::string::string_regex("[A-Za-z0-9 _-]{1,16}")
+                    .expect("valid non-empty project strategy regex"),
+            ),
+        )
+            .prop_map(
+                |(created_at, secs, nanos, description, project)| TimeRecord {
+                    created_at,
+                    duration: Duration::new(secs, nanos),
+                    description,
+                    project,
+                },
+            )
+    }
 
     fn segment(start: &str, end: Option<&str>, description: &str) -> CurrentTaskRecord {
         CurrentTaskRecord {
@@ -446,5 +508,60 @@ mod tests {
                 .unwrap_err();
 
         assert!(error.to_string().contains("missing an end time"));
+    }
+
+    proptest! {
+        #[test]
+        fn report_filter_matches_reference_predicate(
+            records in prop::collection::vec(time_record_strategy(), 0..12),
+            since in prop::option::of(date_strategy()),
+            until in prop::option::of(date_strategy()),
+        ) {
+            let expected: Vec<_> = records
+                .iter()
+                .filter(|tr| {
+                    since.is_none_or(|since| tr.created_at >= since)
+                        && until.is_none_or(|until| tr.created_at <= until)
+                })
+                .map(|tr| {
+                    (
+                        tr.created_at,
+                        tr.duration,
+                        tr.description.clone(),
+                        tr.project.clone(),
+                    )
+                })
+                .collect();
+            let actual = filter_records(
+                records,
+                DateBounds {
+                    lower: since,
+                    upper: until,
+                },
+            )
+                .into_iter()
+                .map(|tr| (tr.created_at, tr.duration, tr.description, tr.project))
+                .collect::<Vec<_>>();
+
+            prop_assert_eq!(actual, expected);
+        }
+
+        #[test]
+        fn durations_by_project_preserves_total_and_projects(
+            records in prop::collection::vec(time_record_strategy(), 0..12)
+        ) {
+            let grouped = durations_by_project(&records);
+            let expected_total: Duration = records.iter().map(|tr| tr.duration).sum();
+            let grouped_total: Duration = grouped.values().copied().sum();
+            let expected_projects: BTreeSet<_> = records
+                .iter()
+                .map(|tr| tr.project.as_deref().unwrap_or("other").to_string())
+                .collect();
+            let grouped_projects: BTreeSet<_> =
+                grouped.keys().map(|project| (*project).to_string()).collect();
+
+            prop_assert_eq!(grouped_total, expected_total);
+            prop_assert_eq!(grouped_projects, expected_projects);
+        }
     }
 }
