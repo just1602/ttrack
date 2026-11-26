@@ -168,15 +168,25 @@ pub fn handle_resume(current_task_file_path: PathBuf) -> rootcause::Result<()> {
     Ok(())
 }
 
-fn time_records_for_segments(records: &[CurrentTaskRecord]) -> rootcause::Result<Vec<TimeRecord>> {
+fn time_records_for_segments(
+    records: Vec<CurrentTaskRecord>,
+) -> rootcause::Result<Vec<TimeRecord>> {
     let mut time_records = Vec::new();
 
     for record in records {
-        let Some(end_at) = record.end_at else {
+        let CurrentTaskRecord {
+            created_at,
+            end_at,
+            description,
+            project,
+        } = record;
+
+        let Some(end_at) = end_at else {
             bail!("Current task record is missing an end time");
         };
 
-        let mut chunk_start = record.created_at;
+        let mut chunks = Vec::new();
+        let mut chunk_start = created_at;
         while chunk_start < end_at {
             let next_midnight = chunk_start
                 .date()
@@ -191,15 +201,31 @@ fn time_records_for_segments(records: &[CurrentTaskRecord]) -> rootcause::Result
                 .to_std()
                 .context("Failed to compute task duration")?;
 
-            time_records.push(TimeRecord {
-                created_at: chunk_start.date(),
-                duration,
-                description: record.description.clone(),
-                project: record.project.clone(),
-            });
-
+            chunks.push((chunk_start.date(), duration));
             chunk_start = chunk_end;
         }
+
+        let mut segment_records: Vec<TimeRecord> = chunks
+            .into_iter()
+            .map(|(date, duration)| TimeRecord {
+                created_at: date,
+                duration,
+                description: String::new(),
+                project: None,
+            })
+            .collect();
+
+        if let Some((last, earlier)) = segment_records.split_last_mut() {
+            for record in earlier {
+                record.description = description.clone();
+                record.project = project.clone();
+            }
+
+            last.description = description;
+            last.project = project;
+        }
+
+        time_records.extend(segment_records);
     }
 
     Ok(time_records)
@@ -223,7 +249,7 @@ pub fn handle_stop(
 
     rec.end_at = Some(Local::now().naive_local());
 
-    let time_records = time_records_for_segments(&records)?;
+    let time_records = time_records_for_segments(records)?;
 
     append_records_to_file(&time_record_file_path, &time_records)
         .context("Failed to write time records from the current task to file")
@@ -315,7 +341,7 @@ mod tests {
 
     #[test]
     fn time_records_for_single_day_segment() {
-        let records = time_records_for_segments(&[segment(
+        let records = time_records_for_segments(vec![segment(
             "2026-11-25T10:00:00",
             Some("2026-11-25T11:30:00"),
             "overnight",
@@ -328,7 +354,7 @@ mod tests {
 
     #[test]
     fn time_records_split_at_midnight() {
-        let records = time_records_for_segments(&[segment(
+        let records = time_records_for_segments(vec![segment(
             "2026-11-25T23:00:00",
             Some("2026-11-26T01:00:00"),
             "overnight",
@@ -342,7 +368,7 @@ mod tests {
 
     #[test]
     fn time_records_end_exactly_at_midnight() {
-        let records = time_records_for_segments(&[segment(
+        let records = time_records_for_segments(vec![segment(
             "2026-11-25T23:00:00",
             Some("2026-11-26T00:00:00"),
             "overnight",
@@ -355,7 +381,7 @@ mod tests {
 
     #[test]
     fn time_records_split_across_two_midnights() {
-        let records = time_records_for_segments(&[segment(
+        let records = time_records_for_segments(vec![segment(
             "2026-11-25T23:00:00",
             Some("2026-11-27T01:00:00"),
             "overnight",
@@ -370,7 +396,7 @@ mod tests {
 
     #[test]
     fn time_records_keep_pause_resume_chunks_unmerged() {
-        let records = time_records_for_segments(&[
+        let records = time_records_for_segments(vec![
             segment(
                 "2026-11-25T23:00:00",
                 Some("2026-11-26T01:00:00"),
@@ -392,8 +418,9 @@ mod tests {
 
     #[test]
     fn time_records_reject_segment_without_end_time() {
-        let error = time_records_for_segments(&[segment("2026-11-25T23:00:00", None, "overnight")])
-            .unwrap_err();
+        let error =
+            time_records_for_segments(vec![segment("2026-11-25T23:00:00", None, "overnight")])
+                .unwrap_err();
 
         assert!(error.to_string().contains("missing an end time"));
     }
