@@ -184,9 +184,24 @@ pub struct Cli {
 #[cfg(test)]
 mod tests {
     use chrono::{Days, Local, NaiveDate};
+    use clap::{CommandFactory, Parser, error::ErrorKind};
     use std::time::Duration;
 
-    use crate::cli::{ttrack_clap_date_parser, ttrack_clap_duration_parser};
+    use crate::cli::{Cli, ttrack_clap_date_parser, ttrack_clap_duration_parser};
+
+    fn parse_report(args: &[&str]) -> Result<Cli, clap::Error> {
+        let mut full_args = vec!["ttrack", "-f", "data.csv", "report"];
+        full_args.extend_from_slice(args);
+        Cli::try_parse_from(full_args)
+    }
+
+    fn assert_conflict(args: &[&str]) {
+        let error = match parse_report(args) {
+            Ok(_) => panic!("conflicting report flags were accepted: {args:?}"),
+            Err(error) => error,
+        };
+        assert_eq!(error.kind(), ErrorKind::ArgumentConflict, "args: {args:?}");
+    }
 
     #[test]
     fn ttrack_clap_date_parser_returns_the_date_directly_if_its_a_date() {
@@ -251,5 +266,65 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Duration::from_secs(5400));
+    }
+
+    #[test]
+    fn report_rejects_multiple_period_flags() {
+        for args in [
+            &["--today", "--yesterday"][..],
+            &["--today", "--this-week"],
+            &["--today", "--last-week"],
+            &["--yesterday", "--this-week"],
+            &["--yesterday", "--last-week"],
+            &["--this-week", "--last-week"],
+            &["--today", "--date", "2026-11-25"],
+            &["--yesterday", "--date", "2026-11-25"],
+            &["--this-week", "--date", "2026-11-25"],
+            &["--last-week", "--date", "2026-11-25"],
+        ] {
+            assert_conflict(args);
+        }
+    }
+
+    #[test]
+    fn report_rejects_period_flag_combined_with_date_range() {
+        assert_conflict(&["--today", "--since", "2026-01-01"]);
+        assert_conflict(&["--last-week", "--until", "2026-12-31"]);
+        assert_conflict(&["--date", "2026-11-25", "--since", "2026-01-01"]);
+    }
+
+    #[test]
+    fn report_accepts_one_period_flag() {
+        for args in [
+            &["--today"][..],
+            &["--yesterday"],
+            &["--this-week"],
+            &["--last-week"],
+            &["--date", "2026-11-25"],
+            &["--today", "--by-project"],
+        ] {
+            assert!(parse_report(args).is_ok(), "args: {args:?}");
+        }
+    }
+
+    #[test]
+    fn report_accepts_since_and_until_together() {
+        assert!(parse_report(&["--since", "2026-01-01", "--until", "2026-12-31"]).is_ok());
+    }
+
+    #[test]
+    fn last_week_help_text_describes_last_week() {
+        let help = Cli::command()
+            .find_subcommand("report")
+            .expect("missing report subcommand")
+            .get_arguments()
+            .find(|arg| arg.get_id() == "last_week")
+            .expect("missing last_week arg")
+            .get_help()
+            .expect("missing last_week help")
+            .to_string();
+
+        assert!(help.contains("last week"), "unexpected help: {help}");
+        assert!(!help.contains("current week"), "unexpected help: {help}");
     }
 }
