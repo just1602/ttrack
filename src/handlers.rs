@@ -1,4 +1,10 @@
-use std::{collections::BTreeMap, fs::File, path::PathBuf, time::Duration};
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Display},
+    fs::File,
+    path::PathBuf,
+    time::Duration,
+};
 
 use rootcause::{bail, option_ext::OptionExt, prelude::ResultExt};
 
@@ -73,7 +79,7 @@ pub fn handle_report(cmd: ReportCommand, filename: PathBuf) -> rootcause::Result
 fn report_total_hours(data: &[TimeRecord]) {
     let total_duration = data.iter().map(|tr| tr.duration).sum();
 
-    println!("total hours: {}", format_duration(total_duration));
+    println!("total hours: {}", FormattedDuration(total_duration));
 }
 
 fn report_by_project(data: &[TimeRecord]) {
@@ -87,7 +93,7 @@ fn report_by_project(data: &[TimeRecord]) {
 
     duration_by_project
         .into_iter()
-        .for_each(|(k, v)| println!("{}: {}", k, format_duration(v)));
+        .for_each(|(k, v)| println!("{}: {}", k, FormattedDuration(v)));
     println!("---")
 }
 
@@ -262,22 +268,34 @@ pub fn handle_stop(
     Ok(())
 }
 
-fn format_duration(duration: Duration) -> String {
-    let mut ret = String::from("");
-    let hours = duration.as_secs() / 3600;
-    if hours > 0 {
-        ret.push_str(&format!("{}h", hours));
-    }
-    let mins = (duration.as_secs() - hours * 3600) / 60;
-    if mins > 0 {
-        ret.push_str(&format!("{}m", mins));
-    }
-    let secs = duration.as_secs() - hours * 3600 - mins * 60;
-    if secs > 0 {
-        ret.push_str(&format!("{}s", secs));
-    }
+struct FormattedDuration(Duration);
 
-    ret
+impl Display for FormattedDuration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let total_secs = self.0.as_secs();
+        let hours = total_secs / 3600;
+        let mins = (total_secs % 3600) / 60;
+        let secs = total_secs % 60;
+
+        let mut wrote_unit = false;
+        if hours > 0 {
+            write!(f, "{hours}h")?;
+            wrote_unit = true;
+        }
+        if mins > 0 {
+            write!(f, "{mins}m")?;
+            wrote_unit = true;
+        }
+        if secs > 0 {
+            write!(f, "{secs}s")?;
+            wrote_unit = true;
+        }
+        if !wrote_unit {
+            f.write_str("0s")?;
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -288,7 +306,7 @@ mod tests {
 
     use crate::records::CurrentTaskRecord;
 
-    use super::{TimeRecord, format_duration, time_records_for_segments};
+    use super::{FormattedDuration, TimeRecord, time_records_for_segments};
 
     fn segment(start: &str, end: Option<&str>, description: &str) -> CurrentTaskRecord {
         CurrentTaskRecord {
@@ -312,31 +330,36 @@ mod tests {
     }
 
     #[test]
-    fn format_duration_can_print_hours() {
-        let result = format_duration(Duration::from_secs(3600));
+    fn formatted_duration_can_print_hours() {
+        let result = FormattedDuration(Duration::from_secs(3600)).to_string();
 
-        assert_eq!(result, String::from("1h"));
+        assert_eq!(result, "1h");
     }
 
     #[test]
-    fn format_duration_can_print_minutes() {
-        let result = format_duration(Duration::from_secs(600));
+    fn formatted_duration_can_print_minutes() {
+        let result = FormattedDuration(Duration::from_secs(600)).to_string();
 
-        assert_eq!(result, String::from("10m"));
+        assert_eq!(result, "10m");
     }
 
     #[test]
-    fn format_duration_can_print_seconds() {
-        let result = format_duration(Duration::from_secs(55));
+    fn formatted_duration_can_print_seconds() {
+        let result = FormattedDuration(Duration::from_secs(55)).to_string();
 
-        assert_eq!(result, String::from("55s"));
+        assert_eq!(result, "55s");
     }
 
     #[test]
-    fn format_duration_can_print_combination_of_time_units() {
-        let result = format_duration(Duration::from_secs(5405));
+    fn formatted_duration_can_print_combination_of_time_units() {
+        let result = FormattedDuration(Duration::from_secs(5405)).to_string();
 
-        assert_eq!(result, String::from("1h30m5s"));
+        assert_eq!(result, "1h30m5s");
+    }
+
+    #[test]
+    fn formatted_duration_prints_zero_for_empty_duration() {
+        assert_eq!(FormattedDuration(Duration::ZERO).to_string(), "0s");
     }
 
     #[test]
