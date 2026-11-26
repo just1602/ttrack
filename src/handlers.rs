@@ -267,7 +267,32 @@ fn format_duration(duration: Duration) -> String {
 mod tests {
     use std::time::Duration;
 
-    use super::format_duration;
+    use chrono::{NaiveDate, NaiveDateTime};
+
+    use crate::records::CurrentTaskRecord;
+
+    use super::{TimeRecord, format_duration, time_records_for_segments};
+
+    fn segment(start: &str, end: Option<&str>, description: &str) -> CurrentTaskRecord {
+        CurrentTaskRecord {
+            created_at: NaiveDateTime::parse_from_str(start, "%Y-%m-%dT%H:%M:%S").unwrap(),
+            end_at: end
+                .map(|value| NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S").unwrap()),
+            description: description.to_string(),
+            project: Some("demo".to_string()),
+        }
+    }
+
+    fn date(year: i32, month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(year, month, day).unwrap()
+    }
+
+    fn assert_record(record: &TimeRecord, expected_date: NaiveDate, expected_seconds: u64) {
+        assert_eq!(record.created_at, expected_date);
+        assert_eq!(record.duration, Duration::from_secs(expected_seconds));
+        assert_eq!(record.description, "overnight");
+        assert_eq!(record.project.as_deref(), Some("demo"));
+    }
 
     #[test]
     fn format_duration_can_print_hours() {
@@ -295,5 +320,90 @@ mod tests {
         let result = format_duration(Duration::from_secs(5405));
 
         assert_eq!(result, String::from("1h30m5s"));
+    }
+
+    #[test]
+    fn time_records_for_single_day_segment() {
+        let records = time_records_for_segments(&[segment(
+            "2026-11-25T10:00:00",
+            Some("2026-11-25T11:30:00"),
+            "overnight",
+        )])
+        .expect("Failed to split segment");
+
+        assert_eq!(records.len(), 1);
+        assert_record(&records[0], date(2026, 11, 25), 90 * 60);
+    }
+
+    #[test]
+    fn time_records_split_at_midnight() {
+        let records = time_records_for_segments(&[segment(
+            "2026-11-25T23:00:00",
+            Some("2026-11-26T01:00:00"),
+            "overnight",
+        )])
+        .expect("Failed to split segment");
+
+        assert_eq!(records.len(), 2);
+        assert_record(&records[0], date(2026, 11, 25), 60 * 60);
+        assert_record(&records[1], date(2026, 11, 26), 60 * 60);
+    }
+
+    #[test]
+    fn time_records_end_exactly_at_midnight() {
+        let records = time_records_for_segments(&[segment(
+            "2026-11-25T23:00:00",
+            Some("2026-11-26T00:00:00"),
+            "overnight",
+        )])
+        .expect("Failed to split segment");
+
+        assert_eq!(records.len(), 1);
+        assert_record(&records[0], date(2026, 11, 25), 60 * 60);
+    }
+
+    #[test]
+    fn time_records_split_across_two_midnights() {
+        let records = time_records_for_segments(&[segment(
+            "2026-11-25T23:00:00",
+            Some("2026-11-27T01:00:00"),
+            "overnight",
+        )])
+        .expect("Failed to split segment");
+
+        assert_eq!(records.len(), 3);
+        assert_record(&records[0], date(2026, 11, 25), 60 * 60);
+        assert_record(&records[1], date(2026, 11, 26), 24 * 60 * 60);
+        assert_record(&records[2], date(2026, 11, 27), 60 * 60);
+    }
+
+    #[test]
+    fn time_records_keep_pause_resume_chunks_unmerged() {
+        let records = time_records_for_segments(&[
+            segment(
+                "2026-11-25T23:00:00",
+                Some("2026-11-26T01:00:00"),
+                "overnight",
+            ),
+            segment(
+                "2026-11-26T01:30:00",
+                Some("2026-11-26T02:00:00"),
+                "overnight",
+            ),
+        ])
+        .expect("Failed to split segments");
+
+        assert_eq!(records.len(), 3);
+        assert_record(&records[0], date(2026, 11, 25), 60 * 60);
+        assert_record(&records[1], date(2026, 11, 26), 60 * 60);
+        assert_record(&records[2], date(2026, 11, 26), 30 * 60);
+    }
+
+    #[test]
+    fn time_records_reject_segment_without_end_time() {
+        let error = time_records_for_segments(&[segment("2026-11-25T23:00:00", None, "overnight")])
+            .unwrap_err();
+
+        assert!(error.to_string().contains("missing an end time"));
     }
 }
