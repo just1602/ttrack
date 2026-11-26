@@ -3,56 +3,72 @@ mod handlers;
 mod records;
 mod storage;
 
-use std::fs;
-use std::path::PathBuf;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
-use cli::Cli;
-use cli::Command;
-use rootcause::bail;
+use cli::{Cli, Command};
 use rootcause::compat::MainReport;
-use rootcause::prelude::ResultExt;
+use rootcause::{bail, option_ext::OptionExt, prelude::ResultExt};
 
-fn main() -> Result<(), MainReport> {
-    let args = Cli::parse();
-
-    // TODO: move all this to a function
-    let current_task_directory = match std::env::var("XDG_STATE_HOME") {
-        Ok(dir) => PathBuf::from(dir).join("ttrack"),
-        Err(_) => {
-            let home_path = std::env::var("HOME")
+fn current_task_file_for(file: &Path) -> rootcause::Result<PathBuf> {
+    let state_directory = match std::env::var_os("XDG_STATE_HOME") {
+        Some(dir) => PathBuf::from(dir).join("ttrack"),
+        None => {
+            let home_path = std::env::var_os("HOME")
                 .context("Failed to fetch HOME environment variable")
                 .attach("XDG_STATE_HOME is not set")?;
-            PathBuf::from(home_path).join(".local/state/ttrack")
+            PathBuf::from(home_path)
+                .join(".local")
+                .join("state")
+                .join("ttrack")
         }
     };
 
-    if !current_task_directory.exists()
-        && let Err(e) = fs::create_dir_all(&current_task_directory)
+    if !state_directory.exists()
+        && let Err(e) = fs::create_dir_all(&state_directory)
     {
         bail!(
             "Failed to create ttrack data folder: {} (path: {})",
             e,
-            current_task_directory.display()
+            state_directory.display()
         );
     }
 
-    let Some(data_file_name) = args.file.file_name() else {
+    let Some(data_file_name) = file.file_name() else {
         bail!(
             "Failed to extract data filename from path: {}",
-            args.file.display()
+            file.display()
         );
     };
 
-    let current_task_file = current_task_directory.join(data_file_name);
+    Ok(state_directory.join(data_file_name))
+}
 
-    match args.command {
-        Command::Track(cmd) => handlers::handle_track(cmd, args.file)?,
-        Command::Report(cmd) => handlers::handle_report(cmd, args.file)?,
-        Command::Start(cmd) => handlers::handle_start(cmd, current_task_file)?,
-        Command::Pause => handlers::handle_pause(current_task_file)?,
-        Command::Resume => handlers::handle_resume(current_task_file)?,
-        Command::Stop => handlers::handle_stop(current_task_file, args.file)?,
+fn main() -> Result<(), MainReport> {
+    let Cli { file, command } = Cli::parse();
+
+    match command {
+        Command::Track(cmd) => handlers::handle_track(cmd, file)?,
+        Command::Report(cmd) => handlers::handle_report(cmd, file)?,
+        Command::Start(cmd) => {
+            let current_task_file = current_task_file_for(&file)?;
+            handlers::handle_start(cmd, current_task_file)?;
+        }
+        Command::Pause => {
+            let current_task_file = current_task_file_for(&file)?;
+            handlers::handle_pause(current_task_file)?;
+        }
+        Command::Resume => {
+            let current_task_file = current_task_file_for(&file)?;
+            handlers::handle_resume(current_task_file)?;
+        }
+        Command::Stop => {
+            let current_task_file = current_task_file_for(&file)?;
+            handlers::handle_stop(current_task_file, file)?;
+        }
     }
 
     Ok(())
