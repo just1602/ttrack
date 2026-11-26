@@ -330,7 +330,7 @@ impl Display for FormattedDuration {
 mod tests {
     use std::{collections::BTreeSet, time::Duration};
 
-    use chrono::{NaiveDate, NaiveDateTime};
+    use chrono::{Duration as ChronoDuration, NaiveDate, NaiveDateTime};
     use proptest::prelude::*;
 
     use crate::records::{CurrentTaskRecord, TimeRecord};
@@ -368,6 +368,80 @@ mod tests {
                     project,
                 },
             )
+    }
+
+    fn current_task_record_strategy() -> impl Strategy<Value = CurrentTaskRecord> {
+        (
+            date_strategy(),
+            0u32..24,
+            0u32..60,
+            0u32..60,
+            0u32..1_000_000_000,
+            1i64..=3 * 86_400,
+            text_strategy(),
+            prop::option::of(
+                prop::string::string_regex("[A-Za-z0-9 _-]{1,16}")
+                    .expect("valid non-empty project strategy regex"),
+            ),
+        )
+            .prop_map(
+                |(date, hour, minute, second, nanos, offset_secs, description, project)| {
+                    let created_at = date
+                        .and_hms_nano_opt(hour, minute, second, nanos)
+                        .expect("valid generated timestamp");
+                    let end_at = created_at
+                        .checked_add_signed(ChronoDuration::seconds(offset_secs))
+                        .expect("generated end time is in range");
+
+                    CurrentTaskRecord {
+                        created_at,
+                        end_at: Some(end_at),
+                        description,
+                        project,
+                    }
+                },
+            )
+    }
+
+    fn expected_chunks(
+        segment: &CurrentTaskRecord,
+    ) -> Vec<(NaiveDate, Duration, String, Option<String>)> {
+        let end_at = segment.end_at.expect("generated segment has an end time");
+        let mut current_date = segment.created_at.date();
+        let end_date = end_at.date();
+        let mut chunks = Vec::new();
+
+        while current_date <= end_date {
+            let day_start = current_date
+                .and_hms_opt(0, 0, 0)
+                .expect("valid generated midnight");
+            let next_midnight = current_date
+                .succ_opt()
+                .expect("generated date is not the maximum")
+                .and_hms_opt(0, 0, 0)
+                .expect("valid generated midnight");
+            let overlap_start = segment.created_at.max(day_start);
+            let overlap_end = end_at.min(next_midnight);
+
+            if overlap_start < overlap_end {
+                let duration = overlap_end
+                    .signed_duration_since(overlap_start)
+                    .to_std()
+                    .expect("generated overlap is non-negative");
+                chunks.push((
+                    current_date,
+                    duration,
+                    segment.description.clone(),
+                    segment.project.clone(),
+                ));
+            }
+
+            current_date = current_date
+                .succ_opt()
+                .expect("generated date is not the maximum");
+        }
+
+        chunks
     }
 
     fn segment(start: &str, end: Option<&str>, description: &str) -> CurrentTaskRecord {
@@ -562,6 +636,20 @@ mod tests {
 
             prop_assert_eq!(grouped_total, expected_total);
             prop_assert_eq!(grouped_projects, expected_projects);
+        }
+
+        #[test]
+        fn split_segments_match_day_overlap_reference(
+            segments in prop::collection::vec(current_task_record_strategy(), 1..4)
+        ) {
+            let expected: Vec<_> = segments.iter().flat_map(expected_chunks).collect();
+            let actual = time_records_for_segments(segments).expect("valid generated segments");
+            let actual: Vec<_> = actual
+                .into_iter()
+                .map(|tr| (tr.created_at, tr.duration, tr.description, tr.project))
+                .collect();
+
+            prop_assert_eq!(actual, expected);
         }
     }
 }
