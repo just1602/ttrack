@@ -54,7 +54,7 @@ complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l by-project -d '
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l today -d 'Only report data from today'
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l yesterday -d 'Only report data from yesterday'
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l this-week -d 'Only report data from the current week (monday to sunday)'
-complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l last-week -d 'Only report data from the current week (monday to sunday)'
+complete -c ttrack -n "__fish_ttrack_using_subcommand report" -l last-week -d 'Only report data from last week (monday to sunday)'
 complete -c ttrack -n "__fish_ttrack_using_subcommand report" -s h -l help -d 'Print help'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l since -d 'The date since when we want the report to start' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l until -d 'The date until when we want the report to end' -r
@@ -63,7 +63,7 @@ complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l by-project -d 'Repor
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l today -d 'Only report data from today'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l yesterday -d 'Only report data from yesterday'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l this-week -d 'Only report data from the current week (monday to sunday)'
-complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l last-week -d 'Only report data from the current week (monday to sunday)'
+complete -c ttrack -n "__fish_ttrack_using_subcommand r" -l last-week -d 'Only report data from last week (monday to sunday)'
 complete -c ttrack -n "__fish_ttrack_using_subcommand r" -s h -l help -d 'Print help'
 complete -c ttrack -n "__fish_ttrack_using_subcommand start" -s d -l description -d 'The description of the task we start tracking' -r
 complete -c ttrack -n "__fish_ttrack_using_subcommand start" -s p -l project -d 'The project with which this task will be associated' -r

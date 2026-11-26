@@ -60,12 +60,12 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '--since=[The date since when we want the report to start]:SINCE:_default' \
 '--until=[The date until when we want the report to end]:UNTIL:_default' \
-'(--since --until)--date=[The specific date we want to report on]:DATE:_default' \
+'--date=[The specific date we want to report on]:DATE:_default' \
 '--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
 '--this-week[Only report data from the current week (monday to sunday)]' \
-'--last-week[Only report data from the current week (monday to sunday)]' \
+'--last-week[Only report data from last week (monday to sunday)]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -74,12 +74,12 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '--since=[The date since when we want the report to start]:SINCE:_default' \
 '--until=[The date until when we want the report to end]:UNTIL:_default' \
-'(--since --until)--date=[The specific date we want to report on]:DATE:_default' \
+'--date=[The specific date we want to report on]:DATE:_default' \
 '--by-project[Report time by project]' \
 '--today[Only report data from today]' \
 '--yesterday[Only report data from yesterday]' \
 '--this-week[Only report data from the current week (monday to sunday)]' \
-'--last-week[Only report data from the current week (monday to sunday)]' \
+'--last-week[Only report data from last week (monday to sunday)]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0

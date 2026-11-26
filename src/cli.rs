@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use chrono::{Days, Local, NaiveDate};
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
 use std::time::Duration;
 
 fn ttrack_clap_date_parser(date: &str) -> Result<NaiveDate, std::io::Error> {
@@ -80,7 +80,17 @@ pub struct TrackCommand {
 #[command(
     name = "report",
     visible_alias = "r",
-    about = "Generate report from the records"
+    about = "Generate report from the records",
+    group(
+        ArgGroup::new("period")
+            .args(["today", "yesterday", "this_week", "last_week", "date"])
+            .conflicts_with("range")
+    ),
+    group(
+        ArgGroup::new("range")
+            .args(["since", "until"])
+            .multiple(true)
+    )
 )]
 pub struct ReportCommand {
     #[arg(
@@ -100,8 +110,7 @@ pub struct ReportCommand {
     #[arg(
         long,
         help = "The specific date we want to report on",
-        value_parser = clap::builder::ValueParser::new(ttrack_clap_date_parser),
-        conflicts_with_all(["since", "until"])
+        value_parser = clap::builder::ValueParser::new(ttrack_clap_date_parser)
     )]
     pub date: Option<NaiveDate>,
 
@@ -127,7 +136,7 @@ pub struct ReportCommand {
 
     #[arg(
         long,
-        help = "Only report data from the current week (monday to sunday)",
+        help = "Only report data from last week (monday to sunday)",
         default_value_t = false
     )]
     pub last_week: bool,
