@@ -78,21 +78,12 @@ fn report_total_hours(data: &[TimeRecord]) {
 
 fn report_by_project(data: &[TimeRecord]) {
     // Use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
-    let mut duration_by_project: BTreeMap<String, Duration> = BTreeMap::new();
+    let mut duration_by_project: BTreeMap<&str, Duration> = BTreeMap::new();
 
-    data.iter().for_each(|tr| {
-        if let Some(project) = &tr.project {
-            if let Some(cur) = duration_by_project.get(project) {
-                duration_by_project.insert(project.to_string(), *cur + tr.duration);
-            } else {
-                duration_by_project.insert(project.to_string(), tr.duration);
-            }
-        } else if let Some(cur) = duration_by_project.get("other") {
-            duration_by_project.insert("other".to_string(), *cur + tr.duration);
-        } else {
-            duration_by_project.insert("other".to_string(), tr.duration);
-        }
-    });
+    for tr in data {
+        let project = tr.project.as_deref().unwrap_or("other");
+        *duration_by_project.entry(project).or_default() += tr.duration;
+    }
 
     duration_by_project
         .into_iter()
