@@ -74,8 +74,9 @@ fn report_bounds(cmd: &ReportCommand, now: NaiveDate) -> rootcause::Result<DateB
     Ok(bounds)
 }
 
-fn filter_records(data: Vec<TimeRecord>, bounds: DateBounds) -> Vec<TimeRecord> {
-    data.into_iter()
+fn filter_records(timerecords: Vec<TimeRecord>, bounds: DateBounds) -> Vec<TimeRecord> {
+    timerecords
+        .into_iter()
         .filter(|tr| {
             bounds.lower.is_none_or(|lower| tr.created_at >= lower)
                 && bounds.upper.is_none_or(|upper| tr.created_at <= upper)
@@ -100,17 +101,17 @@ pub fn handle_report(cmd: ReportCommand, filename: PathBuf) -> rootcause::Result
     Ok(())
 }
 
-fn report_total_hours(data: &[TimeRecord]) {
-    let total_duration = data.iter().map(|tr| tr.duration).sum();
+fn report_total_hours(timerecords: &[TimeRecord]) {
+    let total_duration = timerecords.iter().map(|tr| tr.duration).sum();
 
     println!("total hours: {}", FormattedDuration(total_duration));
 }
 
-// Use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
-fn durations_by_project(data: &[TimeRecord]) -> BTreeMap<&str, Duration> {
+fn durations_by_project(timerecords: &[TimeRecord]) -> BTreeMap<&str, Duration> {
+    // NOTE: we use `BTreeMap` since keys are sorted, and `HashMap` keys can't be sorted.
     let mut duration_by_project = BTreeMap::new();
 
-    for tr in data {
+    for tr in timerecords {
         let project = tr.project.as_deref().unwrap_or("other");
         *duration_by_project.entry(project).or_default() += tr.duration;
     }
