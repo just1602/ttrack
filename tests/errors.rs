@@ -1,50 +1,10 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+mod common;
+
+use std::{fs, path::PathBuf, process::Command};
 
 use tempfile::tempdir;
 
-fn run_ttrack(args: &[&str], state_home: &Path) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_ttrack"))
-        .args(args)
-        .env("XDG_STATE_HOME", state_home)
-        .output()
-        .expect("Failed to run ttrack")
-}
-
-fn state_home(temp_dir: &Path) -> PathBuf {
-    temp_dir.join("state")
-}
-
-fn state_file(temp_dir: &Path) -> PathBuf {
-    state_home(temp_dir).join("ttrack/data.csv")
-}
-
-fn run_in(temp_dir: &Path, args: &[&str]) -> std::process::Output {
-    let data_file = temp_dir.join("data.csv");
-    let mut full_args = vec!["-f", data_file.to_str().unwrap()];
-    full_args.extend_from_slice(args);
-    run_ttrack(&full_args, &state_home(temp_dir))
-}
-
-fn run_ok(temp_dir: &Path, args: &[&str]) {
-    let output = run_in(temp_dir, args);
-    assert!(
-        output.status.success(),
-        "ttrack {args:?} failed:\n{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-}
-
-fn assert_clean_error(output: &std::process::Output, expected: &str) {
-    assert!(!output.status.success());
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains(expected), "unexpected stderr:\n{stderr}");
-    assert!(!stderr.contains("panicked"), "ttrack panicked:\n{stderr}");
-}
+use crate::common::{assert_clean_error, run_in, run_ok, run_ttrack, state_file, state_home};
 
 #[test]
 fn missing_data_file_reports_error_without_panic() {

@@ -1,65 +1,17 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    process::{Command, Output},
-};
+mod common;
+
+use std::path::Path;
+use std::{fs, process::Output};
 
 use chrono::{Days, Duration as ChronoDuration, Local, NaiveDate};
 use tempfile::tempdir;
 
+use crate::common::{assert_clean_error, data_file, run_in, run_ok, state_dir, state_file};
+
 const GOLDEN_RECORDS_CSV: &str = include_str!("fixtures/records.csv");
-
-fn run_ttrack(args: &[&str], state_home: &Path) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_ttrack"))
-        .args(args)
-        .env("XDG_STATE_HOME", state_home)
-        .output()
-        .expect("Failed to run ttrack")
-}
-
-fn state_home(temp_dir: &Path) -> PathBuf {
-    temp_dir.join("state")
-}
-
-fn state_dir(temp_dir: &Path) -> PathBuf {
-    state_home(temp_dir).join("ttrack")
-}
-
-fn state_file(temp_dir: &Path) -> PathBuf {
-    state_dir(temp_dir).join("data.csv")
-}
-
-fn data_file(temp_dir: &Path) -> PathBuf {
-    temp_dir.join("data.csv")
-}
-
-fn run_in(temp_dir: &Path, args: &[&str]) -> Output {
-    let data_path = data_file(temp_dir);
-    let mut full_args = vec!["-f", data_path.to_str().expect("data path is UTF-8")];
-    full_args.extend_from_slice(args);
-    run_ttrack(&full_args, &state_home(temp_dir))
-}
-
-fn run_ok(temp_dir: &Path, args: &[&str]) -> Output {
-    let output = run_in(temp_dir, args);
-    assert!(
-        output.status.success(),
-        "ttrack {args:?} failed:\n{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    output
-}
 
 fn stdout(output: &Output) -> String {
     String::from_utf8(output.stdout.clone()).expect("stdout was not UTF-8")
-}
-
-fn assert_clean_error(output: &Output, expected: &str) {
-    assert!(!output.status.success());
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains(expected), "unexpected stderr:\n{stderr}");
-    assert!(!stderr.contains("panicked"), "ttrack panicked:\n{stderr}");
 }
 
 fn seed_golden_records(temp_dir: &Path) {
